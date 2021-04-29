@@ -1,4 +1,7 @@
+{-# LANGUAGE ApplicativeDo #-}
+{-# LANGUAGE FlexibleInstances #-}
 {- HLINT ignore "Redundant bracket" -}
+{- HLINT ignore "Use <$>" -}
 
 module SearchCmd where
 
@@ -11,7 +14,10 @@ import qualified Data.Aeson.Types as AT
 import Data.Aeson.Encode.Pretty (encodePretty)
 
 -- control
+import Control.Monad (void)
 import Control.Monad.IO.Class (liftIO)
+import Control.Monad.Trans.Class (MonadTrans(lift))
+import Control.Monad.Trans.Except (ExceptT(ExceptT), throwE, catchE, runExceptT)
 
 -- requests
 import qualified Network.HTTP.Req as Req
@@ -28,15 +34,20 @@ import Network.HTTP.Req
       NoReqBody(NoReqBody),
       Option )
 
-import Data.Text (Text)
+import Data.Text (Text, intercalate)
+import Text.Printf
 import qualified Data.Text as T
+import qualified Data.Text.IO as T
 import Data.Char (chr)
 import qualified Data.ByteString as BS  (ByteString)
 import qualified Data.ByteString.Char8 as C8 (pack)
 import qualified Data.ByteString.Lazy.Char8 as B
 
 -- project imports
-import Discogs (DiscogsSearchResults)
+import Discogs (
+    DiscogsSearchResults(results),
+    DiscogsSearchResult(resultTitle, resultYear)
+  )
 import Commands (SearchOpts)
 
 --------------------------------------------------------------------------------
@@ -74,11 +85,32 @@ runSearch opts = do
     print "looking up auth key..."
     lookupEnv "DISCOGS_KEY" >>= \case
         Nothing      -> B.putStrLn $ "key not found."
-        Just authKey -> makeDiscogsSearchRequest authKey opts
+        Just authKey -> runSearch2 authKey opts --void $ runExceptT $ do
+        --     result <- lift $ makeDiscogsSearchRequest authKey opts
+        --     return _
+
+        --runExceptT $ do
+            -- catchE $ doStuff catchString
+            -- --catchE x catchString --displaySearchResults =<< makeDiscogsSearchRequest authKey opts
+            -- return ()
+
+runSearch2 :: String -> SearchOpts -> IO ()
+runSearch2 authKey opts = void $ runExceptT $ do
+    x <- lift $ makeDiscogsSearchRequest authKey opts
+    lift $ case x of
+        Nothing -> putStrLn "empty result"
+        Just  r -> displaySearchResults r
+
+displaySearchResults :: DiscogsSearchResults -> IO ()
+displaySearchResults x = mapM_ displaySearchResult (results x)
+
+displaySearchResult :: DiscogsSearchResult -> IO ()
+displaySearchResult x = do
+    T.putStrLn $ intercalate (T.pack " -- ") [resultTitle x, resultYear x]
 
 -- You can either make your monad an instance of 'MonadHttp', or use
 -- 'runReq' in any IO-enabled monad without defining new instances.
-makeDiscogsSearchRequest :: String -> SearchOpts -> IO ()
+makeDiscogsSearchRequest :: String -> SearchOpts -> IO (Maybe DiscogsSearchResults)
 makeDiscogsSearchRequest authKey opts = runReq defaultHttpConfig $ do
   -- safe-by-construction URL
   let url = https "api.discogs.com" /: "database" /: "search"
@@ -93,8 +125,7 @@ makeDiscogsSearchRequest authKey opts = runReq defaultHttpConfig $ do
           discogsAuth authKey <>      -- user access token
           params                      -- query params
   liftIO $ do
-    B.putStrLn (encodePretty (responseBody r :: Value))
-    print (decodeValue (responseBody r :: Value) :: Maybe DiscogsSearchResults)
+    return (decodeValue (responseBody r :: Value) :: Maybe DiscogsSearchResults)
 
 
 -- dummySearch :: SearchOpts -> IO ()
@@ -116,3 +147,17 @@ makeDiscogsSearchRequest authKey opts = runReq defaultHttpConfig $ do
 --       jsonResponse                    -- specify how to interpret response
 --       discogsUserAgent                -- query params, headers, explicit port number, etc.
 --   liftIO $ B.putStrLn (encodePretty (responseBody r :: Value))
+
+validString :: String -> Either String String
+validString s = if head s == 'a' then Right s else Left "string doesn't start with 'a'"
+
+-- runTest :: IO (Except String ())
+runTest :: ExceptT String IO ()
+runTest = do
+    x <- lift getLine
+
+    ExceptT $ pure $ validString x
+
+    lift $ do
+        putStrLn "running test..."
+        putStrLn x
