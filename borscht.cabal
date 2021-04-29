@@ -22,7 +22,9 @@ executable borscht
   main-is:             Main.hs
   other-modules:
     Discogs,
-    SearchCmd
+    Commands,
+    SearchCmd,
+    ListCmd
   -- other-extensions:
   build-depends:
     base >=4.14,
