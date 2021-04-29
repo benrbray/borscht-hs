@@ -1,0 +1,288 @@
+{
+	"pagination": {
+		"items": 6,
+		"page": 1,
+		"urls": {},
+		"per_page": 50,
+		"pages": 1
+	},
+	"results": [
+		{
+			"catno": "87",
+			"uri": "/Mazouni-Ecoute-Moi-Camarade-Achhal-Dabart-Alik/master/1737699",
+			"master_id": 1737699,
+			"thumb": "https://img.discogs.com/TT7giSjuASwNwakqvUhhXzonvw0=/fit-in/150x150/filters:strip_icc():format(jpeg):mode_rgb():quality(40)/discogs-images/R-8288737-1458700348-8134.jpeg.jpg",
+			"genre": [
+				"Folk, World, & Country"
+			],
+			"format": [
+				"Vinyl",
+				"7\"",
+				"45 RPM"
+			],
+			"community": {
+				"have": 6,
+				"want": 375
+			},
+			"title": "Mazouni* - Ecoute Moi Camarade / Achhal Dabart Alik",
+			"cover_image": "https://img.discogs.com/2iWwflGEgPrn7MnsojaZ36M2_yI=/fit-in/600x600/filters:strip_icc():format(jpeg):mode_rgb():quality(90)/discogs-images/R-8288737-1458700348-8134.jpeg.jpg",
+			"id": 1737699,
+			"year": "1974",
+			"style": [],
+			"barcode": [],
+			"user_data": {
+				"in_collection": false,
+				"in_wantlist": false
+			},
+			"label": [
+				"DDA",
+				"Cheniki"
+			],
+			"resource_url": "https://api.discogs.com/masters/1737699",
+			"country": "Algeria",
+			"master_url": "https://api.discogs.com/masters/1737699",
+			"type": "master"
+		},
+		{
+			"catno": "87",
+			"uri": "/Mazouni-Ecoute-Moi-Camarade-Achhal-Dabart-Alik/release/14988146",
+			"master_id": 1737699,
+			"thumb": "https://img.discogs.com/XIsKDYvckA_pa2BBMJQUrTKU7Rs=/fit-in/150x150/filters:strip_icc():format(jpeg):mode_rgb():quality(40)/discogs-images/R-14988146-1585156725-2811.jpeg.jpg",
+			"genre": [
+				"Folk, World, & Country"
+			],
+			"format": [
+				"Vinyl",
+				"7\"",
+				"45 RPM"
+			],
+			"community": {
+				"have": 1,
+				"want": 76
+			},
+			"title": "Mazouni* - Ecoute Moi Camarade / Achhal Dabart Alik",
+			"cover_image": "https://img.discogs.com/aIQedzBKseQ3QQXDy4ktqPEvLIs=/fit-in/600x602/filters:strip_icc():format(jpeg):mode_rgb():quality(90)/discogs-images/R-14988146-1585156725-2811.jpeg.jpg",
+			"id": 14988146,
+			"year": "1974",
+			"format_quantity": 1,
+			"style": [],
+			"barcode": [],
+			"user_data": {
+				"in_collection": false,
+				"in_wantlist": false
+			},
+			"label": [
+				"DDA",
+				"Cheniki"
+			],
+			"resource_url": "https://api.discogs.com/releases/14988146",
+			"country": "Algeria",
+			"formats": [
+				{
+					"descriptions": [
+						"7\"",
+						"45 RPM"
+					],
+					"name": "Vinyl",
+					"qty": "1"
+				}
+			],
+			"master_url": "https://api.discogs.com/masters/1737699",
+			"type": "release"
+		},
+		{
+			"catno": "87",
+			"uri": "/Mazouni-Ecoute-Moi-Camarade-Achhal-Dabart-Alik/release/8288737",
+			"master_id": 1737699,
+			"thumb": "https://img.discogs.com/TT7giSjuASwNwakqvUhhXzonvw0=/fit-in/150x150/filters:strip_icc():format(jpeg):mode_rgb():quality(40)/discogs-images/R-8288737-1458700348-8134.jpeg.jpg",
+			"genre": [
+				"Folk, World, & Country"
+			],
+			"format": [
+				"Vinyl",
+				"7\"",
+				"45 RPM"
+			],
+			"community": {
+				"have": 5,
+				"want": 299
+			},
+			"title": "Mazouni* - Ecoute Moi Camarade / Achhal Dabart Alik",
+			"cover_image": "https://img.discogs.com/2iWwflGEgPrn7MnsojaZ36M2_yI=/fit-in/600x600/filters:strip_icc():format(jpeg):mode_rgb():quality(90)/discogs-images/R-8288737-1458700348-8134.jpeg.jpg",
+			"id": 8288737,
+			"year": "1974",
+			"format_quantity": 1,
+			"style": [],
+			"barcode": [],
+			"user_data": {
+				"in_collection": false,
+				"in_wantlist": false
+			},
+			"label": [
+				"DDA",
+				"Cheniki"
+			],
+			"resource_url": "https://api.discogs.com/releases/8288737",
+			"country": "Algeria",
+			"formats": [
+				{
+					"descriptions": [
+						"7\"",
+						"45 RPM"
+					],
+					"name": "Vinyl",
+					"qty": "1"
+				}
+			],
+			"master_url": "https://api.discogs.com/masters/1737699",
+			"type": "release"
+		},
+		{
+			"catno": "BB113",
+			"uri": "/Mazouni-Un-Dandy-En-Exil-Alg%C3%A9rie-France-1969-1983/release/13614941",
+			"master_id": 1547420,
+			"thumb": "https://img.discogs.com/CAe5xr-vYvsvOvbXFmkbtk1A1nQ=/fit-in/150x150/filters:strip_icc():format(jpeg):mode_rgb():quality(40)/discogs-images/R-13614941-1557565847-5991.jpeg.jpg",
+			"genre": [
+				"Rock",
+				"Folk, World, & Country"
+			],
+			"format": [
+				"CD",
+				"Compilation"
+			],
+			"community": {
+				"have": 20,
+				"want": 16
+			},
+			"title": "Mazouni* - Un Dandy En Exil / Algérie-France / 1969-1983",
+			"cover_image": "https://img.discogs.com/sbHUv-ccvcqgK9dbR8PFQG0hFcA=/fit-in/600x531/filters:strip_icc():format(jpeg):mode_rgb():quality(90)/discogs-images/R-13614941-1557565847-5991.jpeg.jpg",
+			"id": 13614941,
+			"year": "2019",
+			"format_quantity": 1,
+			"style": [
+				"Raï",
+				"Pop Rock"
+			],
+			"barcode": [
+				"3521383453599"
+			],
+			"user_data": {
+				"in_collection": false,
+				"in_wantlist": false
+			},
+			"label": [
+				"Born Bad Records"
+			],
+			"resource_url": "https://api.discogs.com/releases/13614941",
+			"country": "France",
+			"formats": [
+				{
+					"descriptions": [
+						"Compilation"
+					],
+					"name": "CD",
+					"qty": "1"
+				}
+			],
+			"master_url": "https://api.discogs.com/masters/1547420",
+			"type": "release"
+		},
+		{
+			"catno": "BB113",
+			"uri": "/Mazouni-Un-Dandy-En-Exil-Alg%C3%A9rie-France-1969-1983/master/1547420",
+			"master_id": 1547420,
+			"thumb": "https://img.discogs.com/kne8yx2eOaQg50qS4odBhpnolI8=/fit-in/150x150/filters:strip_icc():format(jpeg):mode_rgb():quality(40)/discogs-images/R-13615110-1557568721-7933.jpeg.jpg",
+			"genre": [
+				"Rock",
+				"Folk, World, & Country"
+			],
+			"format": [
+				"Vinyl",
+				"LP",
+				"Compilation"
+			],
+			"community": {
+				"have": 291,
+				"want": 179
+			},
+			"title": "Mazouni* - Un Dandy En Exil / Algérie-France / 1969-1983",
+			"cover_image": "https://img.discogs.com/o9P7NkNQkXLTtyMh9xlS_Ft5knw=/fit-in/600x592/filters:strip_icc():format(jpeg):mode_rgb():quality(90)/discogs-images/R-13615110-1557568721-7933.jpeg.jpg",
+			"id": 1547420,
+			"year": "2019",
+			"style": [
+				"Raï",
+				"Pop Rock"
+			],
+			"barcode": [
+				"3  521381 553604",
+				"3521381553604"
+			],
+			"user_data": {
+				"in_collection": false,
+				"in_wantlist": false
+			},
+			"label": [
+				"Born Bad Records",
+				"MPO"
+			],
+			"resource_url": "https://api.discogs.com/masters/1547420",
+			"country": "France",
+			"master_url": "https://api.discogs.com/masters/1547420",
+			"type": "master"
+		},
+		{
+			"catno": "BB113",
+			"uri": "/Mazouni-Un-Dandy-En-Exil-Alg%C3%A9rie-France-1969-1983/release/13615110",
+			"master_id": 1547420,
+			"thumb": "https://img.discogs.com/kne8yx2eOaQg50qS4odBhpnolI8=/fit-in/150x150/filters:strip_icc():format(jpeg):mode_rgb():quality(40)/discogs-images/R-13615110-1557568721-7933.jpeg.jpg",
+			"genre": [
+				"Rock",
+				"Folk, World, & Country"
+			],
+			"format": [
+				"Vinyl",
+				"LP",
+				"Compilation"
+			],
+			"community": {
+				"have": 271,
+				"want": 163
+			},
+			"title": "Mazouni* - Un Dandy En Exil / Algérie-France / 1969-1983",
+			"cover_image": "https://img.discogs.com/o9P7NkNQkXLTtyMh9xlS_Ft5knw=/fit-in/600x592/filters:strip_icc():format(jpeg):mode_rgb():quality(90)/discogs-images/R-13615110-1557568721-7933.jpeg.jpg",
+			"id": 13615110,
+			"year": "2019",
+			"format_quantity": 2,
+			"style": [
+				"Raï",
+				"Pop Rock"
+			],
+			"barcode": [
+				"3  521381 553604",
+				"3521381553604"
+			],
+			"user_data": {
+				"in_collection": false,
+				"in_wantlist": false
+			},
+			"label": [
+				"Born Bad Records",
+				"MPO"
+			],
+			"resource_url": "https://api.discogs.com/releases/13615110",
+			"country": "France",
+			"formats": [
+				{
+					"descriptions": [
+						"LP",
+						"Compilation"
+					],
+					"name": "Vinyl",
+					"qty": "2"
+				}
+			],
+			"master_url": "https://api.discogs.com/masters/1547420",
+			"type": "release"
+		}
+	]
+}
