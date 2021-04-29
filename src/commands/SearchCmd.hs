@@ -14,24 +14,25 @@ import Data.Aeson.Encode.Pretty (encodePretty)
 import Control.Monad.IO.Class (liftIO)
 
 -- requests
-import Network.HTTP.Req as Req
+import qualified Network.HTTP.Req as Req
 import Network.HTTP.Req
     ( (/:),
+      (=:),
       defaultHttpConfig,
       https,
       jsonResponse,
       req,
       responseBody,
       runReq,
-      POST(POST), GET(GET),
-      ReqBodyJson(ReqBodyJson),
-      header )
+      GET(GET),
+      NoReqBody(NoReqBody),
+      Option )
 
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Char (chr)
-import Data.ByteString as BS  (ByteString)
-import Data.ByteString.Char8 as C8 (pack)
+import qualified Data.ByteString as BS  (ByteString)
+import qualified Data.ByteString.Char8 as C8 (pack)
 import qualified Data.ByteString.Lazy.Char8 as B
 
 -- project imports
@@ -40,7 +41,7 @@ import Commands (SearchOpts)
 
 --------------------------------------------------------------------------------
 
-stringToBS :: String -> ByteString
+stringToBS :: String -> BS.ByteString
 stringToBS = C8.pack
 
 -- Discogs requires a user agent string to identify the source of requests.
