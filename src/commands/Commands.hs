@@ -41,5 +41,6 @@ listCmd = ListCmd <$> (ListOpts
 data Commands
   = SearchCmd SearchOpts
   | ListCmd ListOpts
+  | TestCmd
   | NotImplemented
   deriving (Eq, Show)

@@ -16,9 +16,29 @@ import qualified Data.ByteString.Lazy.Char8 as BS
 
 --------------------------------------------------------------------------------
 
+data DiscogsRelease = DiscogsRelease {
+    releaseId :: Integer,
+    releaseTitle :: Text
+} deriving (Generic, Show)
+
+instance ToJSON DiscogsRelease where
+    -- No need to provide a toJSON implementation.  For efficiency, we write a
+    -- simple toEncoding implementation, as the default version uses toJSON.
+    --toEncoding = genericToEncoding defaultOptions
+    toEncoding DiscogsRelease{..} = pairs $
+        "id"        .= releaseId         <>
+        "title"     .= releaseTitle
+
+instance FromJSON DiscogsRelease where
+    parseJSON = withObject "DiscogsRelease" $ \v -> do
+        releaseId       <- v .: "id"
+        releaseTitle    <- v .: "title"
+        return DiscogsRelease{..}
+
 -- DiscogsSearchResult ---------------------------------------------------------
 
 data DiscogsSearchResult = DiscogsSearchResult {
+    resultId          :: Integer,
     resultGenre       :: [Text],
     resultStyle       :: [Text],
     resultTitle       :: Text,
@@ -27,7 +47,7 @@ data DiscogsSearchResult = DiscogsSearchResult {
     resultResourceUrl :: Text,
     resultCountry     :: Text,
     resultCoverImage  :: Text,
-    resultItemType    :: Text
+    resultType        :: Text
 } deriving (Generic, Show)
 
 instance ToJSON DiscogsSearchResult where
@@ -35,6 +55,7 @@ instance ToJSON DiscogsSearchResult where
     -- simple toEncoding implementation, as the default version uses toJSON.
     --toEncoding = genericToEncoding defaultOptions
     toEncoding DiscogsSearchResult{..} = pairs $
+        "id"           .= resultId            <>
         "genre"        .= resultGenre         <>
         "style"        .= resultStyle         <>
         "title"        .= resultTitle         <>
@@ -43,10 +64,11 @@ instance ToJSON DiscogsSearchResult where
         "resource_url" .= resultResourceUrl   <>
         "country"      .= resultCountry       <>
         "cover_image"  .= resultCoverImage    <>
-        "type"         .= resultItemType
+        "type"         .= resultType
 
 instance FromJSON DiscogsSearchResult where
     parseJSON = withObject "DiscogsSearchResult" $ \v -> do
+        resultId          <- v .: "id"
         resultGenre       <- v .: "genre"
         resultStyle       <- v .: "style"
         resultTitle       <- v .: "title"
@@ -55,7 +77,7 @@ instance FromJSON DiscogsSearchResult where
         resultResourceUrl <- v .: "resource_url"
         resultCountry     <- v .: "country"
         resultCoverImage  <- v .: "cover_image"
-        resultItemType    <- v .: "type"
+        resultType        <- v .: "type"
         return DiscogsSearchResult{..}
 
 -- DiscogsPagination -----------------------------------------------------------
@@ -82,8 +104,8 @@ instance FromJSON DiscogsPagination where
 -- DiscogsSearchResults --------------------------------------------------------
 
 data DiscogsSearchResults = DiscogsSearchResults {
-    pagination :: Maybe DiscogsPagination,
-    results :: [DiscogsSearchResult]
+    searchPagination :: Maybe DiscogsPagination,
+    searchResults :: [DiscogsSearchResult]
 } deriving (Generic, Show)
 
 instance FromJSON DiscogsSearchResults where

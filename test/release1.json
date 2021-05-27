@@ -1,0 +1,150 @@
+{
+	"id": 14988146,
+	"status": "Accepted",
+	"year": 1974,
+	"resource_url": "https://api.discogs.com/releases/14988146",
+	"uri": "https://www.discogs.com/Mazouni-Ecoute-Moi-Camarade-Achhal-Dabart-Alik/release/14988146",
+	"artists": [
+		{
+			"name": "Mohamed Mazouni",
+			"anv": "Mazouni",
+			"join": "",
+			"role": "",
+			"tracks": "",
+			"id": 1326281,
+			"resource_url": "https://api.discogs.com/artists/1326281"
+		}
+	],
+	"artists_sort": "Mohamed Mazouni",
+	"labels": [
+		{
+			"name": "DDA",
+			"catno": "87",
+			"entity_type": "1",
+			"entity_type_name": "Label",
+			"id": 206586,
+			"resource_url": "https://api.discogs.com/labels/206586"
+		}
+	],
+	"series": [],
+	"companies": [
+		{
+			"name": "Cheniki",
+			"catno": "",
+			"entity_type": "9",
+			"entity_type_name": "Distributed By",
+			"id": 1364285,
+			"resource_url": "https://api.discogs.com/labels/1364285"
+		}
+	],
+	"formats": [
+		{
+			"name": "Vinyl",
+			"qty": "1",
+			"descriptions": [
+				"7\"",
+				"45 RPM"
+			]
+		}
+	],
+	"data_quality": "Needs Vote",
+	"community": {
+		"have": 1,
+		"want": 78,
+		"rating": {
+			"count": 1,
+			"average": 2.0
+		},
+		"submitter": {
+			"username": "DoghouseandBonE",
+			"resource_url": "https://api.discogs.com/users/DoghouseandBonE"
+		},
+		"contributors": [
+			{
+				"username": "DoghouseandBonE",
+				"resource_url": "https://api.discogs.com/users/DoghouseandBonE"
+			},
+			{
+				"username": "sayed_effendi",
+				"resource_url": "https://api.discogs.com/users/sayed_effendi"
+			}
+		],
+		"data_quality": "Needs Vote",
+		"status": "Accepted"
+	},
+	"format_quantity": 1,
+	"date_added": "2020-03-25T10:10:05-07:00",
+	"date_changed": "2020-05-14T03:10:47-07:00",
+	"num_for_sale": 0,
+	"lowest_price": null,
+	"master_id": 1737699,
+	"master_url": "https://api.discogs.com/masters/1737699",
+	"title": "Ecoute Moi Camarade / Achhal Dabart Alik",
+	"country": "Algeria",
+	"released": "1974",
+	"released_formatted": "1974",
+	"identifiers": [],
+	"videos": [
+		{
+			"uri": "https://www.youtube.com/watch?v=afrr-fKlaXM",
+			"title": "mohamed mazouni ecoute moi camarade",
+			"description": "Mohamed Mazouni est une figure de la chanson alg\u00e9rienne en France. Il est n\u00e9 \u00e0 Blida le 4 janvier 1940. Sa carri\u00e8re de chanteur commence \u00e0 la t\u00e9l\u00e9vision dans les ann\u00e9es 1960 et vite il connait le succ\u00e8s aupr\u00e8s du jeune public \u00e0 travers son text",
+			"duration": 381,
+			"embed": true
+		},
+		{
+			"uri": "https://www.youtube.com/watch?v=GX4T4IOojVg",
+			"title": "Mazouni - Ach Hal Dabart Alik",
+			"description": "",
+			"duration": 359,
+			"embed": true
+		}
+	],
+	"genres": [
+		"Folk, World, & Country"
+	],
+	"tracklist": [
+		{
+			"position": "A",
+			"type_": "track",
+			"title": "Ecoute Moi Camarade",
+			"duration": ""
+		},
+		{
+			"position": "B",
+			"type_": "track",
+			"title": "Achhale Dabart Alik",
+			"duration": ""
+		}
+	],
+	"extraartists": [],
+	"images": [
+		{
+			"type": "primary",
+			"uri": "",
+			"resource_url": "",
+			"uri150": "",
+			"width": 600,
+			"height": 602
+		},
+		{
+			"type": "secondary",
+			"uri": "",
+			"resource_url": "",
+			"uri150": "",
+			"width": 600,
+			"height": 597
+		},
+		{
+			"type": "secondary",
+			"uri": "",
+			"resource_url": "",
+			"uri150": "",
+			"width": 600,
+			"height": 610
+		}
+	],
+	"thumb": "",
+	"estimated_weight": 60,
+	"blocked_from_sale": false
+}

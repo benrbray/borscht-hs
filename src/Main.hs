@@ -6,34 +6,14 @@ module Main where
 import Data.Maybe (fromMaybe)
 import Control.Monad.Trans.Maybe (MaybeT(MaybeT, runMaybeT))
 import Control.Monad.Trans.Class (lift)
-import Control.Monad (guard, liftM, forever, mzero, msum, when)
+import Control.Monad (guard, liftM, forever, mzero, msum, when, join, ap)
 
--- -- aeson
--- import Data.Aeson
--- import qualified Data.Aeson.Types as AT
--- import Data.Aeson.Encode.Pretty (encodePretty)
-
--- -- requests
--- import Network.HTTP.Req as Req
--- import Network.HTTP.Req
---     ( (/:),
---       defaultHttpConfig,
---       https,
---       jsonResponse,
---       req,
---       responseBody,
---       runReq,
---       POST(POST), GET(GET),
---       ReqBodyJson(ReqBodyJson),
---       header )
-
--- ugh, strings
--- import Data.Text (Text)
--- import qualified Data.Text as T
--- import Data.Char (chr)
--- import Data.ByteString as BS  (ByteString)
--- import Data.ByteString.Char8 as C8 (pack)
--- import qualified Data.ByteString.Lazy.Char8 as B
+-- monad transformers
+import Control.Monad.Trans.Except (ExceptT(ExceptT))
+import Control.Monad.Trans.Reader (ReaderT)
+import Control.Monad.Reader (MonadReader)
+import Control.Monad.IO.Class (MonadIO)
+import Control.Monad.Except (MonadError)
 
 -- algebraic
 import Data.Semigroup ((<>))
@@ -43,8 +23,13 @@ import Options.Applicative
 
 -- project imports
 import Commands
-import SearchCmd (runSearch)
+import SearchCmd (runSearchCmd)
 import ListCmd (runListDir)
+import TestCmd (runTestCmd)
+
+-- rate limit
+import Data.Time.Units ( Second )
+import RateLimit (rateLimitInvocation)
 
 ------------------------------------------------------------
 
@@ -77,16 +62,17 @@ sample = subparser
                (progDesc "Shuffle your music."))
       <> hidden
        )
+      -- test commands
+      <|> subparser
+       ( commandGroup "Test Commands:"
+      <> command "test"
+         (info (pure TestCmd)
+               (progDesc "Endpoint for testing small functions."))
+      <> hidden
+       )
 
 --------------------------------------------------------------------------------
 
--- main parses and validates the command line arguments,
--- and sends them off to the program entry point
--- main :: IO (Maybe ())
--- main = runMaybeT $
---            do liftIO $ putStr "hello"
---               p <- askPassphrase
---               when (p == "SECRET") mzero
 
 main :: IO ()
 main = chooseCommand =<< execParser opts
@@ -97,9 +83,10 @@ main = chooseCommand =<< execParser opts
     --  <> header "hello - a test for optparse-applicative" )
 
 chooseCommand :: Commands -> IO ()
-chooseCommand (SearchCmd opts) = runSearch opts
+chooseCommand (SearchCmd opts) = runSearchCmd opts
 chooseCommand (ListCmd opts) = runListDir opts
-chooseCommand NotImplemented = putStrLn "(feature not yet implemented)"
+chooseCommand TestCmd = runTestCmd
+chooseCommand _ = putStrLn "(feature not yet implemented)"
 
 --------------------------------------------------------------------------------
 
@@ -107,6 +94,14 @@ ensure :: Alternative f => (a -> Bool) -> a -> f a
 ensure p a = a <$ guard (p a)
 
 --------------------------------------------
+
+-- main parses and validates the command line arguments,
+-- and sends them off to the program entry point
+-- main :: IO (Maybe ())
+-- main = runMaybeT $
+--            do liftIO $ putStr "hello"
+--               p <- askPassphrase
+--               when (p == "SECRET") mzero
 
 getPassphrase :: MaybeT IO String
 getPassphrase = do
@@ -119,7 +114,7 @@ isValid :: String -> Bool
 isValid s = length s >= 4
 
 askPassphrase :: MaybeT IO String
-askPassphrase = do 
+askPassphrase = do
                  lift $ putStrLn "Insert your new passphrase:"
                  value <- msum $ repeat getPassphrase
                  lift $ putStrLn "Storing in database..."
