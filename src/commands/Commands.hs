@@ -1,12 +1,13 @@
 module Commands where
 
 import Options.Applicative
+import Data.Text (Text)
 
 ---- SEARCH ------------------------------------------------
 
 data SearchOpts = SearchOpts {
-    searchTitle  :: String,
-    searchArtist :: String
+    searchTitle  :: Text,
+    searchArtist :: Text
 } deriving (Eq, Show)
 
 searchCmd :: Parser Commands
@@ -25,7 +26,7 @@ searchCmd = SearchCmd <$> (SearchOpts
 -- LIST ----------------------------------------------------
 
 data ListOpts = ListOpts {
-    listDir :: String
+    listDir :: Text
 } deriving (Eq, Show)
 
 listCmd :: Parser Commands

@@ -22,11 +22,11 @@ import Control.Exception.Lifted (try, handle)
 -- monad transformers
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import Control.Monad.Reader (
-      MonadReader, ReaderT, runReaderT, 
+      MonadReader, ReaderT, runReaderT,
       ask, asks
     )
 import Control.Monad.Except (
-      MonadError, liftEither, 
+      MonadError, liftEither,
       ExceptT(ExceptT), runExceptT,
       throwError, catchError
     )
@@ -60,14 +60,21 @@ import qualified Data.ByteString as BS  (ByteString)
 import qualified Data.ByteString.Char8 as C8 (pack)
 import qualified Data.ByteString.Lazy.Char8 as B
 
+-- fuzzy string matching
+import qualified Data.FuzzySet as FZ
+import qualified Data.FuzzySet.Internal as FZ
+import qualified Data.FuzzySet.Util as FZ
+
 -- rate limit
 import Data.Time.Units ( Second )
 import RateLimit (rateLimitInvocation)
 
 -- project imports
-import Commands (SearchOpts)
+import Commands (SearchOpts, searchTitle, searchArtist)
+import Fuzzy (distanceCosine, normalized)
 import Discogs (
     DiscogsRelease(..),
+    DiscogsTrack(..),
     DiscogsSearchResults(searchResults),
     DiscogsSearchResult(resultTitle, resultYear, resultType, resultId)
   )
@@ -201,17 +208,28 @@ runSearch = do
     req1 <- requestDiscogsSearch searchOptions
 
     -- we are looking for specific "release"s, not general "master" listings
-    let releases = filter ((== "release") . resultType) (searchResults req1)
-    mapM_ (getRelease . resultId) releases
-    liftIO $ mapM_ (\s -> do { rateGuard ; print (resultId s) } ) releases
+    let results = filter ((== "release") . resultType) (searchResults req1)
+    --mapM_ (getRelease . resultId) results
+    --liftIO $ mapM_ (\s -> do { rateGuard ; print (resultId s) } ) results
+
+    -- query discogs api for details about each individual release
+    releases <- mapM (requestDiscogsRelease . resultId) results
+    let tracks = releases >>= releaseTracks
+
+    let titles = map (normalized . trackTitle) tracks
+    let fuzzy = FZ.fromList titles
+    let query = searchTitle searchOptions
+
+    liftIO $ print ("query: " ++ (T.unpack query))
+
+    liftIO $ mapM_ (\t -> print (t, distanceCosine 3 query t)) titles
+
+    return ()
 
 -- given a release ID
 getRelease :: Integer -> App DiscogsRelease
 getRelease id = do
-    authKey   <- asks ctxDiscogsAuth
-    rateGuard <- asks ctxRateGuard
-
-    r <- liftIO rateGuard >> requestDiscogsRelease authKey id
+    r <- requestDiscogsRelease id
     liftIO $ putStrLn ("release title: " ++ show (releaseTitle r))
     return r
 
@@ -247,21 +265,23 @@ requestDiscogsSearch opts = do
     -- safe-by-construction URL
     let url = https "api.discogs.com" /: "database" /: "search"
     -- query parameters
+    query <- asks ctxSearchOptions
+    liftIO $ print ("artist: " ++ T.unpack (searchArtist query)) 
+    liftIO $ print ("track:  " ++ T.unpack (searchTitle query)) 
     let params =
-            "artist" =: ("Mazouni" :: Text) <>
-            "track"  =: ("Ecoute moi camarade" :: Text)
+            "artist" =: searchArtist query <>
+            "track"  =: searchTitle query
     -- perform request, decode response
     discogsJsonReq url params
 
 
 -- Discogs API: /database/releases/<release_id>
-requestDiscogsRelease :: String -> Integer -> App DiscogsRelease
-requestDiscogsRelease authKey releaseId = do
-    rateGuard <- asks ctxRateGuard
+requestDiscogsRelease :: Integer -> App DiscogsRelease
+requestDiscogsRelease releaseId = do
     -- safe-by-construction URL
     let url = https "api.discogs.com" /: "releases" /: intToText releaseId
     -- perform request with no parameters, decode response
-    liftIO rateGuard >> discogsJsonReq url mempty
+    discogsJsonReq url mempty
 
 -- oldRequestDiscogsSearch :: String -> SearchOpts -> ExceptT String IO DiscogsSearchResults
 -- oldRequestDiscogsSearch authKey opts = do

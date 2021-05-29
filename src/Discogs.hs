@@ -17,8 +17,9 @@ import qualified Data.ByteString.Lazy.Char8 as BS
 --------------------------------------------------------------------------------
 
 data DiscogsRelease = DiscogsRelease {
-    releaseId :: Integer,
-    releaseTitle :: Text
+    releaseId     :: Integer,
+    releaseTitle  :: Text,
+    releaseTracks :: [DiscogsTrack]
 } deriving (Generic, Show)
 
 instance ToJSON DiscogsRelease where
@@ -26,14 +27,43 @@ instance ToJSON DiscogsRelease where
     -- simple toEncoding implementation, as the default version uses toJSON.
     --toEncoding = genericToEncoding defaultOptions
     toEncoding DiscogsRelease{..} = pairs $
-        "id"        .= releaseId         <>
-        "title"     .= releaseTitle
+        "id"        .= releaseId    <>
+        "title"     .= releaseTitle <>
+        "tracklist" .= releaseTracks
 
 instance FromJSON DiscogsRelease where
     parseJSON = withObject "DiscogsRelease" $ \v -> do
-        releaseId       <- v .: "id"
-        releaseTitle    <- v .: "title"
+        releaseId     <- v .: "id"
+        releaseTitle  <- v .: "title"
+        releaseTracks <- v .: "tracklist"
         return DiscogsRelease{..}
+
+--------------------------------------------------------------------------------
+
+data DiscogsTrack = DiscogsTrack {
+    trackPosition :: Text,
+    trackType     :: Text,
+    trackTitle    :: Text,
+    trackDuration :: Text
+} deriving (Generic, Show)
+
+instance ToJSON DiscogsTrack where
+    -- No need to provide a toJSON implementation.  For efficiency, we write a
+    -- simple toEncoding implementation, as the default version uses toJSON.
+    --toEncoding = genericToEncoding defaultOptions
+    toEncoding DiscogsTrack{..} = pairs $
+        "position" .= trackPosition  <>
+        "type"     .= trackType      <>
+        "title"    .= trackTitle     <>
+        "duration" .= trackDuration
+
+instance FromJSON DiscogsTrack where
+    parseJSON = withObject "DiscogsTrack" $ \v -> do
+        trackPosition <- v .: "position"
+        trackType     <- v .: "type_"
+        trackTitle    <- v .: "title"
+        trackDuration <- v .: "duration"
+        return DiscogsTrack{..}
 
 -- DiscogsSearchResult ---------------------------------------------------------
 

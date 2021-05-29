@@ -20,8 +20,17 @@ extra-source-files:  CHANGELOG.md
 executable borscht
   hs-source-dirs:      src, src/commands, src/util
   main-is:             Main.hs
+  ghc-options:
+    -- use gcc as the linker 
+    -pgml gcc
+    -- link static library archive
+    -L/usr/local/lib/libkakasi.a 
+    -- static linking (https://stackoverflow.com/a/46946192/1444650)
+    "-optl-Wl,--allow-multiple-definition" "-optl-Wl,--whole-archive" "-optl-Wl,-Bstatic" "-optl-Wl,-lkakasi" "-optl-Wl,-Bdynamic" "-optl-Wl,--no-whole-archive"
+  -- extra-lib-dirs: /usr/local/lib/libkakasi.a
+  includes: /usr/local/include/libkakasi.h
   other-modules:
-    Discogs, RateLimit,
+    Discogs, RateLimit, Fuzzy, Kakasi,
     Commands, SearchCmd, ListCmd, TestCmd
   -- other-extensions:
   build-depends:
@@ -32,7 +41,11 @@ executable borscht
     bytestring, text,
     aeson, aeson-pretty,
     optparse-applicative,
+    -- text
     raw-strings-qq,
+    text-icu, text-icu-translit,
+    -- hashmap
+    unordered-containers,
     -- fuzzy string matching
     fuzzyset,
     -- monad transformers
