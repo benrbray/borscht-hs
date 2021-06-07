@@ -18,9 +18,30 @@ build-type:          Simple
 extra-source-files:  CHANGELOG.md
 
 executable borscht
-  hs-source-dirs:      src, src/commands, src/util
+  hs-source-dirs:
+    src,
+    src/Borscht,
+    src/Borscht/API
+    src/Borscht/Commands,
+    src/Borscht/Util
   main-is:             Main.hs
   ghc-options:
+    -- enable all the warnings! 
+    -- (https://medium.com/mercury-bank/enable-all-the-warnings-a0517bc081c3)
+    -Weverything
+    -Wno-unused-matches
+    -Wno-unused-imports
+    -Wno-safe
+    -Wno-unsafe
+    -Wno-implicit-prelude
+    -Wno-monomorphism-restriction
+    -Wno-missing-safe-haskell-mode
+    -Wno-missing-import-lists
+    -Wno-missing-export-lists
+    -Wno-prepositive-qualified-module
+    -Wno-missing-deriving-strategies
+    -Wno-unused-do-bind
+    -Wno-missed-specialisations
     -- use gcc as the linker 
     -pgml gcc
     -- link static library archive
@@ -30,14 +51,16 @@ executable borscht
   -- extra-lib-dirs: /usr/local/lib/libkakasi.a
   includes: /usr/local/include/libkakasi.h
   other-modules:
-    Discogs, RateLimit, Fuzzy, Kakasi,
-    Commands, SearchCmd, ListCmd, TestCmd
+    Borscht.API.Discogs, Borscht.API.MusicBrainz,
+    Borscht.Util.RateLimit, Borscht.Util.Fuzzy, Borscht.Util.Kakasi, Borscht.Util.Functions,
+    Borscht.Commands, Borscht.Commands.SearchCmd, Borscht.Commands.ListCmd, Borscht.Commands.TestCmd
   -- other-extensions:
   build-depends:
     base >=4.14,
-    lifted-base,
-    directory,
+    lifted-base, extra,
+    directory, filepath,
     req,
+    lens,
     bytestring, text,
     aeson, aeson-pretty,
     optparse-applicative,
@@ -50,6 +73,8 @@ executable borscht
     fuzzyset,
     -- monad transformers
     mtl, transformers,
+    -- audio
+    htaglib,
     -- added for RateLimit.hs (may be ok to delete later)
     time, time-units, stm,
     containers, transformers
@@ -60,7 +85,6 @@ executable borscht
     LambdaCase,
     InstanceSigs, ScopedTypeVariables,
     TypeApplications,
-    GeneralizedNewtypeDeriving,
     -- used for monad transformers in mtl
     ConstraintKinds, FlexibleContexts,
     -- used by aeson

@@ -20,16 +20,28 @@ import Data.Semigroup ((<>))
 
 -- optparse-applicative
 import Options.Applicative
+    ( (<**>),
+      command,
+      commandGroup,
+      hidden,
+      idm,
+      info,
+      progDesc,
+      subparser,
+      execParser,
+      helper,
+      Alternative((<|>)),
+      Parser )
 
 -- project imports
-import Commands
-import SearchCmd (runSearchCmd)
-import ListCmd (runListDir)
-import TestCmd (runTestCmd)
+import Borscht.Commands
+import Borscht.Commands.SearchCmd (runSearchCmd)
+import Borscht.Commands.ListCmd (runListDir)
+import Borscht.Commands.TestCmd (runTestCmd)
 
 -- rate limit
 import Data.Time.Units ( Second )
-import RateLimit (rateLimitInvocation)
+import Borscht.Util.RateLimit (rateLimitInvocation)
 
 ------------------------------------------------------------
 

@@ -1,6 +1,6 @@
 {-# LANGUAGE ForeignFunctionInterface #-}
 
-module Kakasi where
+module Borscht.Util.Kakasi where
 
 -- foreign
 import Foreign
@@ -111,4 +111,4 @@ foreign import ccall unsafe "libkakasi.h kakasi_close_kanwadict"
     c_kakasi_close_kanwadict :: IO Int
 
 kakasiClose :: IO Bool
-kakasiClose = print "close" >> (== 0) <$> c_kakasi_close_kanwadict
+kakasiClose = print ("close" :: String) >> (== 0) <$> c_kakasi_close_kanwadict

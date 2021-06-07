@@ -1,8 +1,8 @@
 
-module TestCmd where
+module Borscht.Commands.TestCmd where
 
-import Fuzzy (distanceCosine, normalized)
-import Kakasi (fastSin, kakasiConfigure, kakasiConvert, kakasiClose)
+import Borscht.Util.Fuzzy (distanceCosine, normalized)
+import Borscht.Util.Kakasi (fastSin, kakasiConfigure, kakasiConvert, kakasiClose)
 
 import qualified Data.Text as Text 
 

@@ -1,4 +1,4 @@
-module Commands where
+module Borscht.Commands where
 
 import Options.Applicative
 import Data.Text (Text)

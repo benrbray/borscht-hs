@@ -1,4 +1,4 @@
-module Fuzzy where
+module Borscht.Util.Fuzzy where
 
 -- text
 import Data.Text (Text, toLower)
@@ -16,7 +16,6 @@ import qualified Data.FuzzySet.Internal as FZ
 import qualified Data.FuzzySet.Util as FZ
 
 -- data structures
-import Data.List
 import Data.HashMap.Strict (HashMap, foldrWithKey, alter, intersectionWith, elems)
 
 --------------------------------------------------------------------------------

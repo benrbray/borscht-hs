@@ -2,7 +2,7 @@
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE QuasiQuotes #-}
 
-module Discogs where
+module Borscht.API.Discogs where
 
 import GHC.Generics
 import Data.Text (Text)

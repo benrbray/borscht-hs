@@ -35,7 +35,7 @@
 -- Hackage repo.  I only made some minimal formatting / documentation changes,
 -- since this utility seemed like a good case study in multithreaded Haskell.
 
-module RateLimit (
+module Borscht.Util.RateLimit (
     generateRateLimitedFunction
   , RateLimit(..)
   , ResultsCombiner
@@ -132,7 +132,7 @@ generateRateLimitedFunction :: forall req resp t
                                -- using 'dontCombine'.
                             -> IO (req -> IO resp)
 generateRateLimitedFunction ratelimit action combiner = do
-  print "making new Tchan"
+  print ("making new Tchan" :: String)
   chan <- atomically newTChan
   void $ forkIO $ runner Nothing 0 chan
   return $ resultFunction chan

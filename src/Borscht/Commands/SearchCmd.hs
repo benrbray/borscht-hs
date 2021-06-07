@@ -1,11 +1,13 @@
 {-# LANGUAGE ApplicativeDo #-}
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE TupleSections #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {- HLINT ignore "Redundant bracket" -}
 {- HLINT ignore "Use <$>" -}
 
 --------------------------------------------------------------------------------
 
-module SearchCmd where
+module Borscht.Commands.SearchCmd where
 
 -- system
 import System.Environment (lookupEnv)
@@ -13,7 +15,6 @@ import System.Environment (lookupEnv)
 -- aeson
 import Data.Aeson
 import qualified Data.Aeson.Types as AT
-import Data.Aeson.Encode.Pretty (encodePretty)
 
 -- control
 import Control.Monad (void, filterM, guard, join, ap)
@@ -49,7 +50,6 @@ import Network.HTTP.Req(
     )
 
 -- strings
-import Data.Char (chr)
 import Data.Text (Text, intercalate)
 import qualified Data.Text as T
 import qualified Data.Text.Lazy as T (toStrict)
@@ -62,17 +62,20 @@ import qualified Data.ByteString.Lazy.Char8 as B
 
 -- fuzzy string matching
 import qualified Data.FuzzySet as FZ
-import qualified Data.FuzzySet.Internal as FZ
-import qualified Data.FuzzySet.Util as FZ
 
 -- rate limit
 import Data.Time.Units ( Second )
-import RateLimit (rateLimitInvocation)
+import Borscht.Util.RateLimit (rateLimitInvocation)
+
+-- lens
+import Control.Lens.Tuple (_1, _2)
+import Control.Lens.Operators ((.~))
 
 -- project imports
-import Commands (SearchOpts, searchTitle, searchArtist)
-import Fuzzy (distanceCosine, normalized)
-import Discogs (
+import Borscht.Commands (SearchOpts, searchTitle, searchArtist)
+import Borscht.Util.Functions (fork, dupe, mapFst, mapSnd)
+import Borscht.Util.Fuzzy (distanceCosine, normalized)
+import Borscht.API.Discogs (
     DiscogsRelease(..),
     DiscogsTrack(..),
     DiscogsSearchResults(searchResults),
@@ -121,7 +124,7 @@ decodeEither = AT.parseEither parseJSON
 printExceptT :: Show a => ExceptT a IO b -> IO ()
 printExceptT p = runExceptT p >>= \case
                     Left e  -> print e
-                    Right x -> pure ()
+                    Right _ -> pure ()
 
 -- redirect runtime exceptions to ExceptT
 -- https://stackoverflow.com/a/26392842/1444650
@@ -131,11 +134,6 @@ intercept
 intercept = handle handler
   where handler :: HttpException -> ExceptT String IO a
         handler = throwError . show
-
--- allows ExceptT to make requests via `req`
-instance Req.MonadHttp (ExceptT String IO) where
-    handleHttpException :: HttpException -> ExceptT String IO a
-    handleHttpException e = throwError (show e)
 
 --------------------------------------------------------------------------------
 
@@ -201,7 +199,6 @@ prepareSearch opts = do
 
 runSearch :: App ()
 runSearch = do
-    rateGuard     <- asks ctxRateGuard
     searchOptions <- asks ctxSearchOptions
 
     -- search for releases
@@ -209,15 +206,13 @@ runSearch = do
 
     -- we are looking for specific "release"s, not general "master" listings
     let results = filter ((== "release") . resultType) (searchResults req1)
-    --mapM_ (getRelease . resultId) results
-    --liftIO $ mapM_ (\s -> do { rateGuard ; print (resultId s) } ) results
 
     -- query discogs api for details about each individual release
     releases <- mapM (requestDiscogsRelease . resultId) results
     let tracks = releases >>= releaseTracks
 
     let titles = map (normalized . trackTitle) tracks
-    let fuzzy = FZ.fromList titles
+    -- let fuzzy = FZ.fromList titles
     let query = searchTitle searchOptions
 
     liftIO $ print ("query: " ++ (T.unpack query))
@@ -225,13 +220,6 @@ runSearch = do
     liftIO $ mapM_ (\t -> print (t, distanceCosine 3 query t)) titles
 
     return ()
-
--- given a release ID
-getRelease :: Integer -> App DiscogsRelease
-getRelease id = do
-    r <- requestDiscogsRelease id
-    liftIO $ putStrLn ("release title: " ++ show (releaseTitle r))
-    return r
 
 --------------------------------------------------------------------------------
 
@@ -247,17 +235,18 @@ displaySearchResult x = do
 handleResponse
     :: (MonadError String m, FromJSON a)
     => JsonResponse Value -> m a
-handleResponse r = case decodeValue (responseBody r) of
+handleResponse resp = case decodeValue (responseBody resp) of
     Nothing -> throwError "failed to decode response body"
     Just r  -> return r
 
+-- Performs a GET request with the appropriate headers for the specified
+-- discogs URL and parameters, expecting a JSON object in response.
 discogsJsonReq :: (FromJSON a) => Req.Url scheme -> Option scheme -> App a
 discogsJsonReq url params = do
     authKey   <- asks ctxDiscogsAuth
     rateGuard <- asks ctxRateGuard
     r <- liftIO rateGuard >> req GET url NoReqBody jsonResponse (params <> discogsHeader authKey)
     handleResponse r
-
 
 -- Discogs API: /database/search
 requestDiscogsSearch :: SearchOpts -> App DiscogsSearchResults
@@ -274,29 +263,10 @@ requestDiscogsSearch opts = do
     -- perform request, decode response
     discogsJsonReq url params
 
-
 -- Discogs API: /database/releases/<release_id>
 requestDiscogsRelease :: Integer -> App DiscogsRelease
-requestDiscogsRelease releaseId = do
+requestDiscogsRelease rid = do
     -- safe-by-construction URL
-    let url = https "api.discogs.com" /: "releases" /: intToText releaseId
+    let url = https "api.discogs.com" /: "releases" /: intToText rid
     -- perform request with no parameters, decode response
     discogsJsonReq url mempty
-
--- oldRequestDiscogsSearch :: String -> SearchOpts -> ExceptT String IO DiscogsSearchResults
--- oldRequestDiscogsSearch authKey opts = do
---     -- safe-by-construction URL
---     let url = https "api.discogs.com" /: "database" /: "search"
---     -- query parameters
---     let params =
---             "artist" =: ("Mazouni" :: Text) <>
---             "track"  =: ("Ecoute moi camarade" :: Text)
---     -- perform request
---     let q = (req GET url NoReqBody jsonResponse discogsHeader :: ExceptT String IO (JsonResponse Value))
---     -- perform request
---     r <- req GET url NoReqBody jsonResponse $
---             discogsHeader       <>      -- request header
---             discogsAuth authKey <>      -- user access token
---             params                      -- query params
---     -- decode JSON response
---     handleResponse r
