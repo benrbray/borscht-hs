@@ -18,13 +18,8 @@ build-type:          Simple
 extra-source-files:  CHANGELOG.md
 
 executable borscht
-  hs-source-dirs:
-    src,
-    src/Borscht,
-    src/Borscht/API
-    src/Borscht/Commands,
-    src/Borscht/Util
-  main-is:             Main.hs
+  hs-source-dirs:    src
+  main-is:           Main.hs
   ghc-options:
     -- enable all the warnings! 
     -- (https://medium.com/mercury-bank/enable-all-the-warnings-a0517bc081c3)
@@ -42,16 +37,18 @@ executable borscht
     -Wno-missing-deriving-strategies
     -Wno-unused-do-bind
     -Wno-missed-specialisations
+    -Wno-all-missed-specialisations
     -- use gcc as the linker 
     -pgml gcc
-    -- link static library archive
-    -L/usr/local/lib/libkakasi.a 
     -- static linking (https://stackoverflow.com/a/46946192/1444650)
     "-optl-Wl,--allow-multiple-definition" "-optl-Wl,--whole-archive" "-optl-Wl,-Bstatic" "-optl-Wl,-lkakasi" "-optl-Wl,-Bdynamic" "-optl-Wl,--no-whole-archive"
   -- extra-lib-dirs: /usr/local/lib/libkakasi.a
   includes: /usr/local/include/libkakasi.h
+  extra-lib-dirs: /usr/local/lib/libkakasi.a
   other-modules:
-    Borscht.API.Discogs, Borscht.API.MusicBrainz,
+    Borscht.App, Borscht.Req,
+    Borscht.Req.Discogs, Borscht.Req.Discogs.JSON,
+    Borscht.Req.MusicBrainz, Borscht.Req.MusicBrainz.JSON,
     Borscht.Util.RateLimit, Borscht.Util.Fuzzy, Borscht.Util.Kakasi, Borscht.Util.Functions,
     Borscht.Commands, Borscht.Commands.SearchCmd, Borscht.Commands.ListCmd, Borscht.Commands.TestCmd
   -- other-extensions:
@@ -89,3 +86,15 @@ executable borscht
     ConstraintKinds, FlexibleContexts,
     -- used by aeson
     DeriveGeneric, DefaultSignatures
+
+Test-Suite test
+  type:              exitcode-stdio-1.0
+  default-language:  Haskell2010
+  main-is:           test.hs
+  hs-source-dirs:    tests, src
+  build-depends: 
+    base,
+    raw-strings-qq, bytestring,
+    aeson, containers
+  default-extensions:
+    OverloadedStrings

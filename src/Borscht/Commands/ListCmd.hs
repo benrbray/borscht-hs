@@ -32,7 +32,7 @@ runListDir (ListOpts dir) = do
     musicDir <- D.makeAbsolute (Text.unpack dir)
     musicFiles <- listRecursive isMusic musicDir
 
-    regex <- RX.regex [] "/([^/\\])/()/().()"
+    --regex <- RX.regex [] "/([^/\\])/()/().()"
 
     mapM_ displayFile musicFiles
 
@@ -42,7 +42,6 @@ displayFile path = do
     putStrLn path
     track <- HTL.getTags path audioTrackGetter
     print track
-    
 
 ------------------------------------------------------------
 

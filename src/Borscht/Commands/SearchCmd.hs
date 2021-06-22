@@ -57,7 +57,6 @@ import qualified Data.Text.Lazy.Builder as TB (toLazyText)
 import qualified Data.Text.Lazy.Builder.Int as TB (decimal)
 import qualified Data.Text.IO as T
 import qualified Data.ByteString as BS  (ByteString)
-import qualified Data.ByteString.Char8 as C8 (pack)
 import qualified Data.ByteString.Lazy.Char8 as B
 
 -- fuzzy string matching
@@ -71,47 +70,24 @@ import Borscht.Util.RateLimit (rateLimitInvocation)
 import Control.Lens.Tuple (_1, _2)
 import Control.Lens.Operators ((.~))
 
--- project imports
+-- borscht
+import Borscht.App (App(..), Ctx(..))
 import Borscht.Commands (SearchOpts, searchTitle, searchArtist)
 import Borscht.Util.Functions (fork, dupe, mapFst, mapSnd)
 import Borscht.Util.Fuzzy (distanceCosine, normalized)
-import Borscht.API.Discogs (
+
+-- borscht discogs
+import Borscht.Req.Discogs
+    ( requestDiscogsSearch, requestDiscogsRelease )
+import Borscht.Req.Discogs.JSON (
     DiscogsRelease(..),
     DiscogsTrack(..),
     DiscogsSearchResults(searchResults),
     DiscogsSearchResult(resultTitle, resultYear, resultType, resultId)
   )
 
---------------------------------------------------------------------------------
-
-stringToBS :: String -> BS.ByteString
-stringToBS = C8.pack
-
--- https://github.com/haskell/text/issues/218
-intToText :: Integral a => a -> T.Text
-intToText = T.toStrict . TB.toLazyText . TB.decimal
-
---------------------------------------------------------------------------------
-
--- Discogs requires a user agent string to identify the source of requests.
--- https://www.discogs.com/developers#page:home,header:home-general-information
-discogsUserAgent :: Option scheme
-discogsUserAgent = Req.header "User-Agent" "borscht-hs/0.1 +https://github.com/benrbray/borscht-hs"
-
--- specify Discogs API version
-discogsAccept :: Option scheme
-discogsAccept = Req.header "Accept" "application/vnd.discogs.v2.discogs+json"
-
--- Discogs personal access token
-discogsAuth :: String -> Option scheme
-discogsAuth token = Req.header "Authorization" (stringToBS $ "Discogs token="++token)
-
--- given an auth token
-discogsHeader :: String -> Option scheme
-discogsHeader authKey
-    =  discogsUserAgent
-    <> discogsAccept
-    <> discogsAuth authKey
+-- borscht musicbrainz
+import Borscht.Req.MusicBrainz as MBZ (searchRecording)
 
 --------------------------------------------------------------------------------
 
@@ -134,24 +110,6 @@ intercept
 intercept = handle handler
   where handler :: HttpException -> ExceptT String IO a
         handler = throwError . show
-
---------------------------------------------------------------------------------
-
-data Ctx = Ctx {
-    ctxDiscogsAuth   :: String,     -- discogs API key
-    ctxSearchOptions :: SearchOpts, -- command line options
-    ctxRateGuard     :: IO ()       -- rate-limiter
-}
-
-newtype App a = App {
-    -- IO (Reader AppContext (Either String a))
-    runApp :: ReaderT Ctx (ExceptT String IO) a
-} deriving (Monad, Functor, Applicative, (MonadReader Ctx), MonadIO, MonadError String)
-
--- allows making requests via `req`
-instance Req.MonadHttp App where
-    handleHttpException :: HttpException -> App a
-    handleHttpException e = throwError (show e)
 
 --------------------------------------------------------------------------------
 
@@ -202,6 +160,7 @@ runSearch = do
     searchOptions <- asks ctxSearchOptions
 
     -- search for releases
+    --mbz1 <- MBZ.searchRecording searchOptions
     req1 <- requestDiscogsSearch searchOptions
 
     -- we are looking for specific "release"s, not general "master" listings
@@ -216,7 +175,6 @@ runSearch = do
     let query = searchTitle searchOptions
 
     liftIO $ print ("query: " ++ (T.unpack query))
-
     liftIO $ mapM_ (\t -> print (t, distanceCosine 3 query t)) titles
 
     return ()
@@ -238,35 +196,3 @@ handleResponse
 handleResponse resp = case decodeValue (responseBody resp) of
     Nothing -> throwError "failed to decode response body"
     Just r  -> return r
-
--- Performs a GET request with the appropriate headers for the specified
--- discogs URL and parameters, expecting a JSON object in response.
-discogsJsonReq :: (FromJSON a) => Req.Url scheme -> Option scheme -> App a
-discogsJsonReq url params = do
-    authKey   <- asks ctxDiscogsAuth
-    rateGuard <- asks ctxRateGuard
-    r <- liftIO rateGuard >> req GET url NoReqBody jsonResponse (params <> discogsHeader authKey)
-    handleResponse r
-
--- Discogs API: /database/search
-requestDiscogsSearch :: SearchOpts -> App DiscogsSearchResults
-requestDiscogsSearch opts = do
-    -- safe-by-construction URL
-    let url = https "api.discogs.com" /: "database" /: "search"
-    -- query parameters
-    query <- asks ctxSearchOptions
-    liftIO $ print ("artist: " ++ T.unpack (searchArtist query)) 
-    liftIO $ print ("track:  " ++ T.unpack (searchTitle query)) 
-    let params =
-            "artist" =: searchArtist query <>
-            "track"  =: searchTitle query
-    -- perform request, decode response
-    discogsJsonReq url params
-
--- Discogs API: /database/releases/<release_id>
-requestDiscogsRelease :: Integer -> App DiscogsRelease
-requestDiscogsRelease rid = do
-    -- safe-by-construction URL
-    let url = https "api.discogs.com" /: "releases" /: intToText rid
-    -- perform request with no parameters, decode response
-    discogsJsonReq url mempty
