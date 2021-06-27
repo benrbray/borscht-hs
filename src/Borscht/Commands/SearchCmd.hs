@@ -9,85 +9,64 @@
 
 module Borscht.Commands.SearchCmd where
 
--- system
-import System.Environment (lookupEnv)
-
 -- aeson
 import Data.Aeson
 import qualified Data.Aeson.Types as AT
 
 -- control
-import Control.Monad (void, filterM, guard, join, ap)
-import Control.Exception.Lifted (try, handle)
+import Control.Exception.Lifted (handle)
+import Control.Applicative (liftA2, empty, (<|>))
 
--- monad transformers
-import Control.Monad.IO.Class (MonadIO, liftIO)
-import Control.Monad.Reader (
-      MonadReader, ReaderT, runReaderT,
-      ask, asks
-    )
+-- monads
+import Control.Monad ((>=>))
+import Control.Monad.IO.Class
+import Control.Monad.Trans.Maybe
+import Control.Monad.Extra (concatMapM)
+import Control.Monad.Reader (runReaderT)
 import Control.Monad.Except (
-      MonadError, liftEither,
-      ExceptT(ExceptT), runExceptT,
-      throwError, catchError
-    )
+      ExceptT, runExceptT, throwError
+  )
 
 -- data
-import Data.Bifunctor (first, second)
+import Data.List (partition)
+import Data.Monoid (First(..))
+import Data.Maybe (fromMaybe)
 
 -- requests
-import qualified Network.HTTP.Req as Req
-import Network.HTTP.Req(
-      (/:), (=:),
-      defaultHttpConfig,
-      https, GET(GET),
-      Req, req, runReq,
-      JsonResponse, jsonResponse,
-      responseBody,
-      NoReqBody(NoReqBody),
-      Option,
-      HttpException(VanillaHttpException)
-    )
+import Network.HTTP.Req(HttpException(..))
 
 -- strings
-import Data.Text (Text, intercalate)
+import Data.Text (Text)
 import qualified Data.Text as T
-import qualified Data.Text.Lazy as T (toStrict)
-import qualified Data.Text.Lazy.Builder as TB (toLazyText)
-import qualified Data.Text.Lazy.Builder.Int as TB (decimal)
-import qualified Data.Text.IO as T
-import qualified Data.ByteString as BS  (ByteString)
-import qualified Data.ByteString.Lazy.Char8 as B
 
--- fuzzy string matching
-import qualified Data.FuzzySet as FZ
+-- pretty-simple
+import Text.Pretty.Simple (pPrint)
 
--- rate limit
-import Data.Time.Units ( Second )
-import Borscht.Util.RateLimit (rateLimitInvocation)
-
--- lens
-import Control.Lens.Tuple (_1, _2)
-import Control.Lens.Operators ((.~))
+-- time
+import qualified Data.Time.Clock as Time (NominalDiffTime)
+import qualified Data.Time.Format as Time (parseTimeM, defaultTimeLocale)
 
 -- borscht
-import Borscht.App (App(..), Ctx(..))
-import Borscht.Commands (SearchOpts, searchTitle, searchArtist)
-import Borscht.Util.Functions (fork, dupe, mapFst, mapSnd)
-import Borscht.Util.Fuzzy (distanceCosine, normalized)
+import Borscht.App (App(..), prepareCtx)
+import Borscht.Util.Normalize (mkNormalizedText)
+import Borscht.Autotag.Candidates (TrackCandidate(..), ArtistCandidate(..))
 
 -- borscht discogs
+import qualified Borscht.Req.Discogs      as Dgs
+import qualified Borscht.Req.Discogs.JSON as Dgs
 import Borscht.Req.Discogs
-    ( requestDiscogsSearch, requestDiscogsRelease )
+    ( SearchOpts, requestDiscogsSearch, requestDiscogsRelease, requestDiscogsMaster )
 import Borscht.Req.Discogs.JSON (
     DiscogsRelease(..),
     DiscogsTrack(..),
     DiscogsSearchResults(searchResults),
-    DiscogsSearchResult(resultTitle, resultYear, resultType, resultId)
+    DiscogsSearchResult(resultId),
+    DiscogsReleaseArtist(..),
+    DiscogsMasterRelease(..)
   )
 
 -- borscht musicbrainz
-import Borscht.Req.MusicBrainz as MBZ (searchRecording)
+-- import Borscht.Req.MusicBrainz as MBZ (searchRecording)
 
 --------------------------------------------------------------------------------
 
@@ -124,75 +103,154 @@ intercept = handle handler
 
 --------------------------------------------------------------------------------
 
-throwMaybe :: (MonadError b m) => b -> Maybe a -> m a
-throwMaybe e Nothing  = throwError e
-throwMaybe _ (Just x) = pure x
-
 runSearchCmd :: SearchOpts -> IO ()
 runSearchCmd opts
     = either print return
     =<< runExceptT (prepareSearch opts)
 
-getEnv :: (MonadIO m, MonadError String m) => String -> m String
-getEnv name
-    = liftIO (lookupEnv name)
-    >>= throwMaybe ("environment variable" ++ name ++ " not found")
-
 prepareSearch :: SearchOpts -> ExceptT String IO ()
-prepareSearch opts = do
-    -- prepare api key
-    authKey <- getEnv "DISCOGS_KEY"
-    -- prepare rate limiter
-    rateGuard <- liftIO $ rateLimitInvocation (1 :: Second) (pure :: () -> IO ())
-    -- prepare request context
-    let ctx = Ctx {
-        ctxDiscogsAuth   = authKey,
-        ctxSearchOptions = opts,
-        ctxRateGuard     = rateGuard ()
-    }
-    -- run search
-    runReaderT (runApp runSearch) ctx
+prepareSearch opts = runReaderT (runApp $ runSearch opts) =<< prepareCtx
 
----------------------
+------------------------------------------------------------
 
-runSearch :: App ()
-runSearch = do
-    searchOptions <- asks ctxSearchOptions
-
-    -- search for releases
+runSearch :: SearchOpts -> App ()
+runSearch query = do
+    -- search MusicBrainz for releases
     --mbz1 <- MBZ.searchRecording searchOptions
-    req1 <- requestDiscogsSearch searchOptions
-
-    -- we are looking for specific "release"s, not general "master" listings
-    let results = filter ((== "release") . resultType) (searchResults req1)
-
-    -- query discogs api for details about each individual release
-    releases <- mapM (requestDiscogsRelease . resultId) results
-    let tracks = releases >>= releaseTracks
-
-    let titles = map (normalized . trackTitle) tracks
-    -- let fuzzy = FZ.fromList titles
-    let query = searchTitle searchOptions
-
-    liftIO $ print ("query: " ++ (T.unpack query))
-    liftIO $ mapM_ (\t -> print (t, distanceCosine 3 query t)) titles
-
+    -- search discogs for a list of matching master releases
+    results <- searchResults <$> requestDiscogsSearch query
+    mapM_ pPrint results
     return ()
+
+    -- -- query discogs api for details about each individual release
+    -- releases <- mapM (requestDiscogsRelease . resultId) results
+    -- -- rank candidates by ngram cosine distance to query title
+    -- -- TODO normalize query fields
+    -- let queryTitle = searchTitle query
+    --     tracks     = releases >>= releaseTracks
+    --     scored     = map (score &&& id) tracks
+    --     candidates = sortOn (negate . fst) scored
+    --     score      = (distanceCosine 3 queryTitle) . (normalized . trackTitle)
+
+    -- liftIO $ do
+    --     -- configure buffering (https://stackoverflow.com/a/10196382/1444650)
+    --     hSetBuffering stdout LineBuffering -- or NoBuffering
+    --     -- present the top five candidates
+    --     mapM_ offerCandidate (take 5 candidates)
+    --     mapM_ print candidates
+
+    -- return ()
+
+
+-- converts timestamp like "4:16" to 256 seconds
+-- NominalDiffTime measures duration, ignoring leap seconds, and as a `RealFrac`
+-- instance, behaves like its value in seconds upon conversions like `floor`
+parseDuration :: Text -> Maybe Integer
+parseDuration t = floor <$> (Time.parseTimeM True Time.defaultTimeLocale "%m:%S" (T.unpack t) :: Maybe Time.NominalDiffTime)
+
+-- combines information from the track and its corresponding release 
+candidateTrackFromDiscogs :: DiscogsRelease -> DiscogsTrack -> TrackCandidate
+candidateTrackFromDiscogs r t = TrackCandidate {
+        tcTitle    = mkNormalizedText (trackTitle t),
+        tcArtists  = map candidateArtistFromDiscogs (releaseArtists r),
+        tcYear     = releaseYear r,
+        tcCountry  = releaseCountry r,
+        tcDuration = parseDuration (trackDuration t)
+    }
+
+candidateArtistFromDiscogs :: DiscogsReleaseArtist -> ArtistCandidate
+candidateArtistFromDiscogs artist = ArtistCandidate {
+        acId   = releaseArtistId artist,
+        acName = mkNormalizedText (releaseArtistName artist)
+    }
 
 --------------------------------------------------------------------------------
 
-displaySearchResults :: DiscogsSearchResults -> IO ()
-displaySearchResults x = mapM_ displaySearchResult (searchResults x)
+-- this function is meant to be called by the autotagger
+queryDiscogs :: SearchOpts -> App [DiscogsTrack]
+queryDiscogs query = do
+    -- search discogs for a list of matching releases (albums)
+    results <- searchResults <$> requestDiscogsSearch query
+    -- query discogs api for details about each individual release
+    releases <- mapM (requestDiscogsRelease . resultId) results
+    -- rank candidates by ngram cosine distance to query title
+    return (releases >>= releaseTracks)
 
-displaySearchResult :: DiscogsSearchResult -> IO ()
-displaySearchResult x = do
-    T.putStrLn $ intercalate " -- " [resultTitle x, resultYear x]
+processRelease :: DiscogsRelease -> App [TrackCandidate]
+processRelease r = do
+    return $ map (candidateTrackFromDiscogs r) (releaseTracks r)
 
--- ////////////////////////////////////////////////////////////////////////// --
+nonEmpty :: [a] -> Maybe [a]
+nonEmpty [] = Nothing
+nonEmpty as = Just as
 
-handleResponse
-    :: (MonadError String m, FromJSON a)
-    => JsonResponse Value -> m a
-handleResponse resp = case decodeValue (responseBody resp) of
-    Nothing -> throwError "failed to decode response body"
-    Just r  -> return r
+-- Lazily-evaluated monoid instance, for trying a sequence of fallback actions.
+-- Initially tried a @(First a)@, but the semigroup operation (<>) is not lazy.
+-- The below works because the Alternative instance for the MaybeT monad transformer
+-- returns the first successful result, without executing the remaining actions.
+-- (thanks to https://stackoverflow.com/a/47126169/1444650)
+newtype FirstT m a = FirstT (MaybeT m a)
+
+firstT :: m (Maybe a) -> FirstT m a
+firstT tma = FirstT (MaybeT tma)
+
+getFirstT :: FirstT m a -> m (Maybe a)
+getFirstT (FirstT (MaybeT tma)) = tma
+
+instance Monad m => Semigroup (FirstT m a) where
+    FirstT m1 <> FirstT m2 = FirstT $ m1 <|> m2
+
+instance Monad m => Monoid (FirstT m a) where
+    mempty = FirstT empty
+
+queryDiscogsMasters :: SearchOpts -> App [TrackCandidate]
+queryDiscogsMasters query = do
+    -- search discogs for a list of matching tracks
+    results <- searchResults <$> requestDiscogsSearch query
+
+    -- a "master" represents an abstract "album" with potentially many "releases"
+    -- we prefer "master" metadata when present, but fall back to orphan "releases"
+    let (foundMasters, foundReleases) = partition ((== Dgs.ResultMaster) . Dgs.resultType) results
+
+    liftIO $ do
+        putStrLn $ "releases found: " ++ show (length foundMasters)
+        putStrLn $ "masters found: " ++ show (length foundReleases)
+
+    -- extract the canonical release for a "master" album
+    -- TODO: (2021-06-27) this is a partial function, only accepting masters!
+    -- illegal to call on releases (see the comment on Discogs.JSON for details)
+    let canonicalRelease
+          =   (requestDiscogsMaster . resultId)
+          >=> (requestDiscogsRelease . masterMainRelease)
+
+    -- three ways to fetch a list of releases, in order of preference
+    -- the later ones will be lazily evaluated if earlier ones fail
+    -- TODO: (2021-06-27) factor out @(firstT $ nonEmpty)@?  could be a @(Foldable.asum $ [...list of actions...])@
+    let releases1 = firstT $ nonEmpty <$> mapM canonicalRelease foundMasters
+        releases2 = firstT $ nonEmpty <$> mapM (requestDiscogsRelease . resultId) foundReleases
+        releases3 = firstT $ nonEmpty <$> recoverRelease query
+
+    releases <- getFirstT (releases1 <> releases2 <> releases3)
+
+    liftIO $ case releases of
+        Nothing -> putStrLn "found nothing!!"
+        _       -> putStrLn $ "found " ++ show (length releases) ++ " something!"
+
+    concatMapM processRelease (fromMaybe [] releases)
+
+-- help the user recover after the search process failed to produce a release
+recoverRelease :: SearchOpts -> App [DiscogsRelease]
+recoverRelease query = do
+    liftIO $ putStrLn "No releases found for (title+artist) combination.  Searching for all releases by (artist)."
+    return []
+
+--------------------------------------------------------------------------------
+
+offerCandidate :: (Double,DiscogsTrack) -> IO Bool
+offerCandidate (score, track) = do
+    putStrLn "CANDIDATE"
+    putStrLn $ "score:" ++ (show score)
+    print track
+    getLine >>= \case
+        "y" -> pure True
+        _   -> pure False

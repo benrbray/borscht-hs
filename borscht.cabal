@@ -25,7 +25,6 @@ executable borscht
     -- (https://medium.com/mercury-bank/enable-all-the-warnings-a0517bc081c3)
     -Weverything
     -Wno-unused-matches
-    -Wno-unused-imports
     -Wno-safe
     -Wno-unsafe
     -Wno-implicit-prelude
@@ -47,10 +46,13 @@ executable borscht
   extra-lib-dirs: /usr/local/lib/libkakasi.a
   other-modules:
     Borscht.App, Borscht.Req,
+    Borscht.Db.Model, Borscht.Db.Queries,
+    Borscht.Autotag.Candidates,
     Borscht.Req.Discogs, Borscht.Req.Discogs.JSON,
     Borscht.Req.MusicBrainz, Borscht.Req.MusicBrainz.JSON,
-    Borscht.Util.RateLimit, Borscht.Util.Fuzzy, Borscht.Util.Kakasi, Borscht.Util.Functions,
-    Borscht.Commands, Borscht.Commands.SearchCmd, Borscht.Commands.ListCmd, Borscht.Commands.TestCmd
+    Borscht.Util.RateLimit, Borscht.Util.Fuzzy, Borscht.Util.Kakasi,
+    Borscht.Util.Functions, Borscht.Util.Normalize,
+    Borscht.Commands, Borscht.Commands.SearchCmd, Borscht.Commands.ListCmd, Borscht.Commands.TestCmd, Borscht.Commands.TestDbCmd
   -- other-extensions:
   build-depends:
     base >=4.14,
@@ -58,10 +60,20 @@ executable borscht
     directory, filepath,
     req,
     lens,
+    sort,
     bytestring, text,
     aeson, aeson-pretty,
     optparse-applicative,
+    generic-monoid,
+    data-default,
+    -- database
+    persistent,
+    persistent-sqlite,
+    persistent-template,
+    -- included for working with persistent
+    unliftio, conduit, monad-logger,
     -- text
+    text, formatting,
     raw-strings-qq,
     text-icu, text-icu-translit,
     -- hashmap
@@ -74,7 +86,9 @@ executable borscht
     htaglib,
     -- added for RateLimit.hs (may be ok to delete later)
     time, time-units, stm,
-    containers, transformers
+    containers,
+    -- experimental (maybe remove later)
+    byline, pretty-simple
   -- hs-source-dirs:
   default-language:    Haskell2010
   default-extensions:

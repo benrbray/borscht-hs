@@ -24,6 +24,11 @@ mapSnd g (x,y) = (x, g y)
 
 ------------------------------------------------------------
 
+(<$$>) :: (Functor f, Functor g) => (a -> b) -> f (g a) -> f (g b)
+(<$$>) = fmap . fmap
+
+------------------------------------------------------------
+
 -- https://github.com/haskell/text/issues/218
 intToText :: Integral a => a -> T.Text
 intToText = TL.toStrict . TLB.toLazyText . TLB.decimal

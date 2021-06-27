@@ -3,25 +3,30 @@ module Borscht.Commands where
 import Options.Applicative
 import Data.Text (Text)
 
----- SEARCH ------------------------------------------------
+-- project imports
+import Borscht.Req.Discogs (SearchOpts(..))
+import Borscht.Util.Functions ((<$$>))
 
-data SearchOpts = SearchOpts {
-    searchTitle  :: Text,
-    searchArtist :: Text
-} deriving (Eq, Show)
+---- SEARCH ------------------------------------------------
 
 searchCmd :: Parser Commands
 searchCmd = SearchCmd <$> (SearchOpts
-    <$> strOption
+    <$> (optional . strOption)
       ( long "title"
           <> metavar "TITLE"
           <> help "song title"
       )
-    <*> strOption
-      ( long "artist"
-          <> help "song artist"
-          <> metavar "ARTIST"
-      ) )
+    <*> (optional . strOption)
+      ( long "title"
+          <> metavar "TITLE"
+          <> help "song title"
+      )
+    <*> (optional . strOption)
+      ( long "type"
+          <> help "song type"
+          <> metavar "TYPE"
+      )
+    )
 
 -- LIST ----------------------------------------------------
 
@@ -43,5 +48,6 @@ data Commands
   = SearchCmd SearchOpts
   | ListCmd ListOpts
   | TestCmd
+  | TestDbCmd
   | NotImplemented
   deriving (Eq, Show)

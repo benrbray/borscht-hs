@@ -3,53 +3,46 @@
 
 module Borscht.Req.Discogs (
     requestDiscogsSearch,
-    requestDiscogsRelease
+    requestDiscogsRelease,
+    requestDiscogsMaster,
+    SearchOpts(..), matchArtist, matchTitle, matchYear
 ) where
 
 --------------------------------------------------------------------------------
 
+-- data
+import Data.Default (Default, def)
+import Control.Applicative ( Alternative((<|>)) )
+
 -- text
-import qualified Data.Text as T
+import Data.Text (Text)
 import qualified Data.ByteString.Char8 as C8 (pack)
 
 -- aeson
-import Data.Aeson
+import Data.Aeson ( FromJSON )
 
 -- requests
 import qualified Network.HTTP.Req as Req
 import Network.HTTP.Req(
       (/:), (=:),
-      defaultHttpConfig,
-      https, GET(GET),
-      Req, req, runReq,
-      JsonResponse, jsonResponse,
-      responseBody,
+      https, GET(GET), req, jsonResponse,
       NoReqBody(NoReqBody),
-      Option,
-      HttpException(VanillaHttpException)
+      Option
     )
 
 -- monad transformers
-import Control.Monad.IO.Class (MonadIO, liftIO)
-import Control.Monad.Reader (
-      MonadReader, ReaderT, runReaderT,
-      ask, asks
-    )
-import Control.Monad.Except (
-      MonadError, liftEither,
-      ExceptT(ExceptT), runExceptT,
-      throwError, catchError
-    )
+import Control.Monad.IO.Class (liftIO)
+import Control.Monad.Reader (asks)
 
 -- borscht
 import Borscht.App
     (App(..), Ctx(..))
 import Borscht.Req
     (handleResponse)
-import Borscht.Req.Discogs.JSON
-    ( DiscogsSearchResults, DiscogsRelease )
-import Borscht.Commands
-    (SearchOpts, searchTitle, searchArtist)
+import Borscht.Req.Discogs.JSON ( 
+    DiscogsSearchResults, 
+    DiscogsRelease, DiscogsMasterRelease
+  )
 import Borscht.Util.Functions
     (intToText)
 
@@ -88,25 +81,69 @@ discogsJsonReq url params = do
 
 --------------------------------------------------------------------------------
 
+data SearchOpts = SearchOpts {
+        searchArtist :: Maybe Text,
+        searchTitle  :: Maybe Text,
+        searchYear   :: Maybe Text
+    } deriving (Eq, Ord, Read, Show)
+
+instance Default SearchOpts where
+    def = SearchOpts Nothing Nothing Nothing
+
+instance Semigroup SearchOpts where
+    SearchOpts a1 t1 y1 <> SearchOpts a2 t2 y2
+        = SearchOpts (a1 <|> a2) (t1 <|> t2) (y1 <|> y2)
+
+instance Monoid SearchOpts where mempty = def
+
+matchArtist :: Text -> SearchOpts
+matchArtist a = def { searchArtist = Just a }
+
+matchTitle :: Text -> SearchOpts
+matchTitle t = def { searchTitle = Just t }
+
+matchYear :: Text -> SearchOpts
+matchYear y = def { searchYear = Just y }
+
 -- Discogs API: /database/search
+-- returns releases only
 requestDiscogsSearch :: SearchOpts -> App DiscogsSearchResults
-requestDiscogsSearch opts = do
+requestDiscogsSearch query = do
     -- safe-by-construction URL
     let url = https "api.discogs.com" /: "database" /: "search"
-    -- query parameters
-    query <- asks ctxSearchOptions
-    liftIO $ print ("artist: " ++ T.unpack (searchArtist query)) 
-    liftIO $ print ("track:  " ++ T.unpack (searchTitle query)) 
-    let params =
-            "artist" =: searchArtist query <>
-            "track"  =: searchTitle query
+
+    let args = [
+            ("artist" , searchArtist query),
+            ("title"  , searchTitle query),
+            ("type"   , searchYear query)
+          ]
+    
+    -- like catMaybe on the second argument
+    -- TODO (2021-06-27) use lenses here?
+    let justArgs = [ (key,v) | arg@(key, Just v) <- args ]
+
+    liftIO $ do
+        putStr "Just Args:\t" 
+        print justArgs
+
+    let params   = (map (uncurry (=:)) justArgs)
+    let option   = (foldl (<>) mempty params)
+    
     -- perform request, decode response
-    discogsJsonReq url params
+    discogsJsonReq url option
 
 -- Discogs API: /database/releases/<release_id>
 requestDiscogsRelease :: Integer -> App DiscogsRelease
 requestDiscogsRelease rid = do
     -- safe-by-construction URL
     let url = https "api.discogs.com" /: "releases" /: intToText rid
+    -- perform request with no parameters, decode response
+    discogsJsonReq url mempty
+
+-- Discogs API: /database/masters/<master_id>
+requestDiscogsMaster :: Integer -> App DiscogsMasterRelease
+requestDiscogsMaster rid = do
+    -- safe-by-construction URL
+    let url = https "api.discogs.com" /: "masters" /: intToText rid
     -- perform request with no parameters, decode response
     discogsJsonReq url mempty

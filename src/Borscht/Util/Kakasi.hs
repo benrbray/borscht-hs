@@ -6,15 +6,12 @@ module Borscht.Util.Kakasi where
 import Foreign
 import Foreign.C.Types
 import Foreign.C.String
-import qualified Foreign.Marshal.Array as FMA
 
 -- text / strings
 import Data.Text (Text)
 import qualified Data.Text.Encoding as TE
-import qualified Data.Text as Text
 import qualified Data.ByteString as BS
 import qualified Data.Text.Foreign as TF
-
 
 ------------------------------------------------------------
 

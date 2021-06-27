@@ -40,11 +40,9 @@ import Borscht.App
 import Borscht.Req
     (handleResponse)
 import Borscht.Req.Discogs.JSON
-    ( DiscogsSearchResults, DiscogsRelease )
-import Borscht.Commands
-    (SearchOpts, searchTitle, searchArtist)
-import Borscht.Util.Functions
-    (intToText)
+    ( DiscogsRelease )
+import Borscht.Req.Discogs
+    ( SearchOpts(..) )
 
 --------------------------------------------------------------------------------
 
@@ -73,13 +71,11 @@ jsonReq url params = do
 -- | Search for a release given partial information about a track.
 -- MusicBrainz API: /database/release-group/<release_id>
 searchRecording :: SearchOpts -> App DiscogsRelease
-searchRecording opts = do
+searchRecording query = do
     -- safe-by-construction URL
     let url = Req.https "api.discogs.com" /: "database" /: "search"
     -- query parameters
-    query <- asks ctxSearchOptions
-    liftIO $ print ("artist: " ++ T.unpack (searchArtist query)) 
-    liftIO $ print ("recording:  " ++ T.unpack (searchTitle query)) 
+    liftIO $ print query
     -- TODO MusicBrainz supports Lucene search queries,
     -- so we must escape Lucene reserved characters 
     -- https://lucene.apache.org/core/4_3_0/queryparser/org/apache/lucene/queryparser/classic/package-summary.html#Escaping_Special_Characters

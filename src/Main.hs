@@ -3,20 +3,10 @@
 module Main where
 
 -- control
-import Data.Maybe (fromMaybe)
-import Control.Monad.Trans.Maybe (MaybeT(MaybeT, runMaybeT))
+import Control.Monad.Trans.Maybe
 import Control.Monad.Trans.Class (lift)
-import Control.Monad (guard, liftM, forever, mzero, msum, when, join, ap)
+import Control.Monad (guard, msum)
 
--- monad transformers
-import Control.Monad.Trans.Except (ExceptT(ExceptT))
-import Control.Monad.Trans.Reader (ReaderT)
-import Control.Monad.Reader (MonadReader)
-import Control.Monad.IO.Class (MonadIO)
-import Control.Monad.Except (MonadError)
-
--- algebraic
-import Data.Semigroup ((<>))
 
 -- optparse-applicative
 import Options.Applicative
@@ -36,12 +26,9 @@ import Options.Applicative
 -- project imports
 import Borscht.Commands
 import Borscht.Commands.SearchCmd (runSearchCmd)
-import Borscht.Commands.ListCmd (runListDir)
+import Borscht.Commands.ListCmd (runListCmd)
 import Borscht.Commands.TestCmd (runTestCmd)
-
--- rate limit
-import Data.Time.Units ( Second )
-import Borscht.Util.RateLimit (rateLimitInvocation)
+import Borscht.Commands.TestDbCmd (runTestDbCmd)
 
 ------------------------------------------------------------
 
@@ -80,6 +67,9 @@ sample = subparser
       <> command "test"
          (info (pure TestCmd)
                (progDesc "Endpoint for testing small functions."))
+      <> command "testdb"
+         (info (pure TestDbCmd)
+               (progDesc "Test database functionality."))
       <> hidden
        )
 
@@ -96,8 +86,9 @@ main = chooseCommand =<< execParser opts
 
 chooseCommand :: Commands -> IO ()
 chooseCommand (SearchCmd opts) = runSearchCmd opts
-chooseCommand (ListCmd opts) = runListDir opts
+chooseCommand (ListCmd opts) = runListCmd opts
 chooseCommand TestCmd = runTestCmd
+chooseCommand TestDbCmd = runTestDbCmd
 chooseCommand _ = putStrLn "(feature not yet implemented)"
 
 --------------------------------------------------------------------------------

@@ -6,9 +6,13 @@ module Borscht.Req where
 import Data.Aeson
 import qualified Data.Aeson.Types as AT
 
--- exception
-import Control.Exception.Lifted (try, handle)
+-- monads
+import Control.Exception.Lifted (handle)
 import Control.Monad.Except (ExceptT(..), runExceptT, MonadError(..))
+import Control.Monad.Trans (MonadIO, liftIO)
+
+-- pretty-simple
+import Text.Pretty.Simple (pPrint)
 
 -- req
 import qualified Network.HTTP.Req as Req (HttpException, JsonResponse, responseBody)
@@ -38,8 +42,9 @@ decodeEither :: FromJSON a => Value -> Either String a
 decodeEither = AT.parseEither parseJSON
 
 handleResponse
-    :: (MonadError String m, FromJSON a)
+    :: (MonadIO m, MonadError String m, FromJSON a)
     => Req.JsonResponse Value -> m a
-handleResponse resp = case decodeValue (Req.responseBody resp) of
-    Nothing -> throwError "failed to decode response body"
-    Just r  -> return r
+handleResponse resp = case decodeEither (Req.responseBody resp) of
+    Left e  -> do liftIO $ pPrint resp
+                  throwError $ "[failed to decode response body] " ++ e
+    Right r -> return r
