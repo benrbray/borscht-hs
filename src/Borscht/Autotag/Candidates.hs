@@ -12,9 +12,15 @@ data ArtistCandidate = ArtistCandidate {
     } deriving (Show)
 
 data TrackCandidate = TrackCandidate {
-        tcTitle    :: NormalizedText,
-        tcArtists  :: [ArtistCandidate],
-        tcYear     :: Maybe Integer,
-        tcCountry  :: Maybe Text,
-        tcDuration :: Maybe Integer
+        -- album / release information
+        tcReleaseTitle :: Maybe NormalizedText,
+        tcDgsReleaseId :: Maybe Integer,
+        tcMbzReleaseId :: Maybe Integer,
+        -- track information
+        tcTitle        :: NormalizedText,
+        tcArtists      :: [ArtistCandidate],
+        tcYear         :: Maybe Integer,
+        tcGenres       :: [Text],
+        tcCountry      :: Maybe Text,
+        tcDuration     :: Maybe Integer
     } deriving (Show)

@@ -17,9 +17,14 @@ searchCmd = SearchCmd <$> (SearchOpts
           <> help "song title"
       )
     <*> (optional . strOption)
-      ( long "title"
-          <> metavar "TITLE"
-          <> help "song title"
+      ( long "artist"
+          <> metavar "ARTIST"
+          <> help "song artist"
+      )
+    <*> (optional . strOption)
+      ( long "year"
+          <> help "song year"
+          <> metavar "YEAR"
       )
     <*> (optional . strOption)
       ( long "type"

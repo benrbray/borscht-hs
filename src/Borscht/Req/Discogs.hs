@@ -5,7 +5,7 @@ module Borscht.Req.Discogs (
     requestDiscogsSearch,
     requestDiscogsRelease,
     requestDiscogsMaster,
-    SearchOpts(..), matchArtist, matchTitle, matchYear
+    SearchOpts(..), matchArtist, matchTitle, matchYear, matchType
 ) where
 
 --------------------------------------------------------------------------------
@@ -84,15 +84,16 @@ discogsJsonReq url params = do
 data SearchOpts = SearchOpts {
         searchArtist :: Maybe Text,
         searchTitle  :: Maybe Text,
-        searchYear   :: Maybe Text
+        searchYear   :: Maybe Text,
+        searchType   :: Maybe Text -- TODO: use a datatype here (or DataKinds string literals)
     } deriving (Eq, Ord, Read, Show)
 
 instance Default SearchOpts where
-    def = SearchOpts Nothing Nothing Nothing
+    def = SearchOpts Nothing Nothing Nothing Nothing
 
 instance Semigroup SearchOpts where
-    SearchOpts a1 t1 y1 <> SearchOpts a2 t2 y2
-        = SearchOpts (a1 <|> a2) (t1 <|> t2) (y1 <|> y2)
+    SearchOpts a1 t1 y1 typ1 <> SearchOpts a2 t2 y2 typ2
+        = SearchOpts (a1 <|> a2) (t1 <|> t2) (y1 <|> y2) (typ1 <|> typ2)
 
 instance Monoid SearchOpts where mempty = def
 
@@ -105,6 +106,9 @@ matchTitle t = def { searchTitle = Just t }
 matchYear :: Text -> SearchOpts
 matchYear y = def { searchYear = Just y }
 
+matchType :: Text -> SearchOpts
+matchType y = def { searchType = Just y }
+
 -- Discogs API: /database/search
 -- returns releases only
 requestDiscogsSearch :: SearchOpts -> App DiscogsSearchResults
@@ -114,8 +118,9 @@ requestDiscogsSearch query = do
 
     let args = [
             ("artist" , searchArtist query),
-            ("title"  , searchTitle query),
-            ("type"   , searchYear query)
+            ("track"  , searchTitle query),
+            ("year"   , searchYear query),
+            ("type"   , searchType query)
           ]
     
     -- like catMaybe on the second argument

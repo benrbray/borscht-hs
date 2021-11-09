@@ -2,6 +2,7 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE MonadComprehensions #-}
 {- HLINT ignore "Redundant bracket" -}
 {- HLINT ignore "Use <$>" -}
 
@@ -29,8 +30,8 @@ import Control.Monad.Except (
 
 -- data
 import Data.List (partition)
-import Data.Monoid (First(..))
 import Data.Maybe (fromMaybe)
+import Data.Foldable (asum)
 
 -- requests
 import Network.HTTP.Req(HttpException(..))
@@ -151,11 +152,15 @@ parseDuration t = floor <$> (Time.parseTimeM True Time.defaultTimeLocale "%m:%S"
 -- combines information from the track and its corresponding release 
 candidateTrackFromDiscogs :: DiscogsRelease -> DiscogsTrack -> TrackCandidate
 candidateTrackFromDiscogs r t = TrackCandidate {
-        tcTitle    = mkNormalizedText (trackTitle t),
-        tcArtists  = map candidateArtistFromDiscogs (releaseArtists r),
-        tcYear     = releaseYear r,
-        tcCountry  = releaseCountry r,
-        tcDuration = parseDuration (trackDuration t)
+        tcReleaseTitle = Just $ mkNormalizedText (releaseTitle r),
+        tcDgsReleaseId = Just (releaseId r),
+        tcMbzReleaseId = Nothing,
+        tcGenres       = releaseGenres r,
+        tcTitle        = mkNormalizedText (trackTitle t),
+        tcArtists      = map candidateArtistFromDiscogs (releaseArtists r),
+        tcYear         = releaseYear r,
+        tcCountry      = releaseCountry r,
+        tcDuration     = parseDuration (trackDuration t)
     }
 
 candidateArtistFromDiscogs :: DiscogsReleaseArtist -> ArtistCandidate
@@ -203,6 +208,21 @@ instance Monad m => Semigroup (FirstT m a) where
 instance Monad m => Monoid (FirstT m a) where
     mempty = FirstT empty
 
+-- request release info for a given search result
+resultToRelease :: DiscogsSearchResult -> App DiscogsRelease
+resultToRelease result = do
+    case Dgs.resultType result of
+        Dgs.ResultRelease -> (requestDiscogsRelease . resultId) result
+        Dgs.ResultMaster  -> masterCanonicalRelease result
+
+-- extract the canonical release for a "master" album
+-- TODO: (2021-06-27) this is a partial function, only accepting masters!
+-- illegal to call on releases (see the comment on Discogs.JSON for details)
+masterCanonicalRelease :: DiscogsSearchResult -> App DiscogsRelease
+masterCanonicalRelease
+    =   (requestDiscogsMaster . resultId)
+    >=> (requestDiscogsRelease . masterMainRelease)
+
 queryDiscogsMasters :: SearchOpts -> App [TrackCandidate]
 queryDiscogsMasters query = do
     -- search discogs for a list of matching tracks
@@ -216,41 +236,50 @@ queryDiscogsMasters query = do
         putStrLn $ "releases found: " ++ show (length foundMasters)
         putStrLn $ "masters found: " ++ show (length foundReleases)
 
-    -- extract the canonical release for a "master" album
-    -- TODO: (2021-06-27) this is a partial function, only accepting masters!
-    -- illegal to call on releases (see the comment on Discogs.JSON for details)
-    let canonicalRelease
-          =   (requestDiscogsMaster . resultId)
-          >=> (requestDiscogsRelease . masterMainRelease)
-
     -- three ways to fetch a list of releases, in order of preference
     -- the later ones will be lazily evaluated if earlier ones fail
-    -- TODO: (2021-06-27) factor out @(firstT $ nonEmpty)@?  could be a @(Foldable.asum $ [...list of actions...])@
-    let releases1 = firstT $ nonEmpty <$> mapM canonicalRelease foundMasters
-        releases2 = firstT $ nonEmpty <$> mapM (requestDiscogsRelease . resultId) foundReleases
-        releases3 = firstT $ nonEmpty <$> recoverRelease query
+    let actions = map (firstT . fmap nonEmpty) [
+           -- method 1: use the canonical release for each found master
+           mapM masterCanonicalRelease foundMasters,
+           -- method 2: use all the releases returned by the search query
+           mapM (requestDiscogsRelease . resultId) foundReleases,
+           -- method 3: search for the artist first, then attempt to match the title
+           --      then search for the track first, then attempt to match the artist
+           [ r1 ++ r2 | r1 <- artistThenTrack query , r2 <- trackThenArtist query ]
+         ];
 
-    releases <- getFirstT (releases1 <> releases2 <> releases3)
+    -- use the result of the first successful action
+    releases <- getFirstT $ foldl (<>) mempty actions
 
+    -- 
     liftIO $ case releases of
         Nothing -> putStrLn "found nothing!!"
         _       -> putStrLn $ "found " ++ show (length releases) ++ " something!"
 
     concatMapM processRelease (fromMaybe [] releases)
 
--- help the user recover after the search process failed to produce a release
-recoverRelease :: SearchOpts -> App [DiscogsRelease]
-recoverRelease query = do
-    liftIO $ putStrLn "No releases found for (title+artist) combination.  Searching for all releases by (artist)."
-    return []
+-- search for the artist first, then attempt to match the title
+artistThenTrack :: SearchOpts -> App [DiscogsRelease]
+artistThenTrack query = do
+    liftIO $ putStrLn "Searching for all releases by (artist)."
+    
+    -- query discogs for releases matching this artist
+    artistResults <- case Dgs.searchArtist query of
+        Nothing     -> return []
+        Just artist -> do let params = (Dgs.matchArtist artist) <> (Dgs.matchType "release")
+                          searchResults <$> requestDiscogsSearch params
 
---------------------------------------------------------------------------------
+    -- return all tracks belonging to top 5 releases matching this artist name
+    mapM (requestDiscogsRelease . resultId) (take 5 artistResults)
 
-offerCandidate :: (Double,DiscogsTrack) -> IO Bool
-offerCandidate (score, track) = do
-    putStrLn "CANDIDATE"
-    putStrLn $ "score:" ++ (show score)
-    print track
-    getLine >>= \case
-        "y" -> pure True
-        _   -> pure False
+-- search for the artist first, then attempt to match the title
+trackThenArtist :: SearchOpts -> App [DiscogsRelease]
+trackThenArtist query = do
+    liftIO $ putStrLn "Searching for all releases by (title)."
+    
+    artistResults <- case Dgs.searchTitle query of
+        Nothing     -> return []
+        Just title -> searchResults <$> requestDiscogsSearch (Dgs.matchTitle title)
+
+    -- return all tracks belonging to top 5 releases matching this artist name
+    mapM resultToRelease (take 5 artistResults)
