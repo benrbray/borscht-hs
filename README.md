@@ -27,6 +27,7 @@ I created `borscht` not only to create a music database that suits my use case, 
 * [x] I wrote a monadic parser combinator for Datalog inference rules `R(X,Y) :- P(X,Z), P(Z,Y).`
 * [ ] I implemented [semi-naive evaluation](http://pages.cs.wisc.edu/~paris/cs838-s16/lecture-notes/lecture8.pdf) for Datalog, which powers the music tagging system.
 * [x] I wrote a [foreign function interface](http://book.realworldhaskell.org/read/interfacing-with-c-the-ffi.html) wrapper for the [Kakasi](http://kakasi.namazu.org/index.html.en) C library, which transliterates Japanese kanji to romaji.
+* [x] I merged a [pull request](https://github.com/pjones/byline/pull/20) into the [`Byline`](https://hackage.haskell.org/package/byline) package adding support for vivid ANSI terminal colors, and a [second one](https://github.com/pjones/byline/pull/21) to repair an unlawful semigroup instance.
 
 Here's a list of some tangential topics that I read about while working on `borscht`.  These are all really interesting to me and I hope to work with them directly on future projects.
 
@@ -36,6 +37,8 @@ Here's a list of some tangential topics that I read about while working on `bors
 ## FAQ
 
 **Why the name?**  [Borscht](https://en.wikipedia.org/wiki/Borscht) is a type of soup made from [beets](https://beets.io/)!
+
+**What music do you listen to?** Check out [Tinariwen](https://www.youtube.com/watch?v=PItnw3Z7WgY), [Dakh Daughters](https://www.youtube.com/watch?v=OMiAw7AHJvg), and [Shaolin Afronauts](https://www.youtube.com/watch?v=mVphcpIoTpc).
 
 ## Development
 

@@ -64,6 +64,7 @@ executable borscht
     bytestring, text,
     aeson, aeson-pretty,
     optparse-applicative,
+    ansi-terminal,
     generic-monoid,
     data-default,
     -- database

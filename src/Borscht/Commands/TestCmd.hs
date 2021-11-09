@@ -1,4 +1,5 @@
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 
 module Borscht.Commands.TestCmd where
@@ -10,11 +11,13 @@ import Borscht.Util.Normalize (normalized)
 import Data.Text (Text)
 import qualified Data.Text as Text
 
+import qualified Byline as BL
 
 import Data.Monoid (First(..), (<>))
 import Control.Applicative (liftA2)
 
 import Data.Foldable (asum)
+import Data.Function ((&))
 import Control.Applicative
 import Control.Monad.Trans.Maybe
 import Control.Monad.IO.Class (liftIO)
@@ -33,8 +36,8 @@ data Item
 -- | How to display a menu item.
 instance ToStylizedText Item where
   toStylizedText item = case item of
-    Fruit name -> text name <> (" (fruit)" <> fg red)
-    Vegetable name -> text name <> (" (vegetable)" <> fg green)
+    Fruit name -> text name <> (" (fruit)" & BL.fg BL.red)
+    Vegetable name -> text name <> (" (vegetable)" & BL.fg BL.red)
 
 -- | The list of menu items.
 items :: NonEmpty.NonEmpty Item
@@ -50,10 +53,10 @@ items =
 runTestCmd :: IO ()
 runTestCmd = do
   let menuConfig =
-        menuBanner ("Pick a snack: " <> bold) $
+        menuBanner ("Pick a snack: " & BL.bold) $
           menu items
-      prompt = "Which snack? " <> bold <> fg yellow
-      onError = "Please pick a valid item!" <> fg red
+      prompt = "Which snack? " & BL.bold & BL.fg BL.yellow
+      onError = "Please pick a valid item!" & BL.fg BL.red
 
   -- Display the menu and get back the item the user selected.  The
   -- user will be able to select an item using it's index, name, or
