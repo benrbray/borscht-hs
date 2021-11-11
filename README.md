@@ -1,11 +1,11 @@
 # `borscht-hs`
 
-> Borscht is in development, so most of the features below are still forthcoming!
+> **Borscht is in development!**  Many of the features below have been implemented in some form, but have not yet been glued together into a cohesive experience.  Borscht is my way of practicing Haskell, so it's a Frankenstein's monster of different packages and coding styles.
 
 `borscht` is a command line tool for organizing your personal music library.
 
 * Search for missing music metadata from the [Discogs](https://www.discogs.com/my) and [MusicBrainz](https://musicbrainz.org/) databases.
-* Write custom [Datalog](https://en.wikipedia.org/wiki/Datalog) inference rules to automatically tag and re-tag your music, and create playlists from saved Datalog queries.
+* (in progress) Write custom [Datalog](https://en.wikipedia.org/wiki/Datalog) inference rules to automatically tag and re-tag your music, and create playlists from saved Datalog queries.
 
 `borscht` takes inspiration from [`beets`](https://beets.io/), with a few key differences:
 
@@ -22,10 +22,10 @@ I created `borscht` not only to create a music database that suits my use case, 
 * [x] I learned how to use `cabal` to manage project dependencies
 * [x] I use [`req`](https://hackage.haskell.org/package/req) to make HTTP requests, including API authentication
 * [x] I use [`aeson`](https://hackage.haskell.org/package/aeson) to parse JSON responses from the [Discogs](https://www.discogs.com/developers) and [MusicBrainz](https://musicbrainz.org/doc/MusicBrainz_API) APIs
-* [x] I use [`persistent`](https://www.yesodweb.com/book/persistent) to manage a `sqlite` database for music libraries created with `borscht`
+* [ ] (in progress) I use [`persistent`](https://www.yesodweb.com/book/persistent) to manage a `sqlite` database for music libraries created with `borscht`
 * [x] I use [`mtl`](https://hackage.haskell.org/package/mtl) to manage a monad transformer stack
 * [x] I wrote a monadic parser combinator for Datalog inference rules `R(X,Y) :- P(X,Z), P(Z,Y).`
-* [ ] I implemented [semi-naive evaluation](http://pages.cs.wisc.edu/~paris/cs838-s16/lecture-notes/lecture8.pdf) for Datalog, which powers the music tagging system.
+* [ ] (in progress) I implemented [semi-naive evaluation](http://pages.cs.wisc.edu/~paris/cs838-s16/lecture-notes/lecture8.pdf) with [stratified negation](http://pages.cs.wisc.edu/~paris/cs784-s17/lectures/lecture9.pdf) for Datalog, which powers the music tagging system.
 * [x] I wrote a [foreign function interface](http://book.realworldhaskell.org/read/interfacing-with-c-the-ffi.html) wrapper for the [Kakasi](http://kakasi.namazu.org/index.html.en) C library, which transliterates Japanese kanji to romaji.
 * [x] I merged a [pull request](https://github.com/pjones/byline/pull/20) into the [`Byline`](https://hackage.haskell.org/package/byline) package adding support for vivid ANSI terminal colors, and a [second one](https://github.com/pjones/byline/pull/21) to repair an unlawful semigroup instance.
 
